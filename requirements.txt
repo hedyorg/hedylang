@@ -1,0 +1,13 @@
+# ----------------- Runtime dependencies --------------------------------------------
+# We cannot go higher than this, because starting 1.2.1+
+# we parse "100" as text instead of a number.
+lark==1.1.9
+
+iso-639>=0.4.5
+iso3166~=2.0.2
+
+Unidecode==1.4.0
+
+# ----------------- Dev dependencies --------------------------------------------
+pytest==9.0.2
+pylint==1.9.5
