@@ -7,7 +7,7 @@ module-name = "hedy"
 
 [project]
 name = "hedylang"
-version = "0.0.1"
+version = "0.0.0"
 authors = [
   { name="Felienne Hermans", email="felienne@gmail.com" },
 ]

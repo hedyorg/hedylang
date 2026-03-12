@@ -1,0 +1,87 @@
+name: Relese
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {} # Allow running the workflow on-demand
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-tags: true  # Ensure tags are fetched for versioning
+
+    - name: Check if current version is already published
+      id: version
+      run: |
+        version=$(cat VERSION)
+        tag="v${version}"
+        echo "Version to release: $version"
+        echo "Looking for tag:    $tag"
+
+        echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+        if [ git rev-parse ${tag} >/dev/null 2>&1 ]; then
+          echo "Tag ${tag} is already published. Skipping release."
+          echo "publish=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+        fi
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
+
+  release:
+    needs: [version]
+    if: needs.version.outputs.publish == 'true'
+
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+      contents: write  # Required for creating a release
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-tags: true  # Ensure tags are fetched for versioning
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v6
+      with:
+        python-version-file: pyproject.toml
+        cache: 'pip'
+
+    - name: Install the project
+      run: uv sync --locked --all-extras --dev
+
+    - name: Run tests
+      run: |
+        uv run doit pretest
+        uv run pytest
+
+    - name: Build and publish
+      run: |
+        uv version ${{ needs.version.outputs.version }}
+        uv build
+        uv publish
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+        target_commitish: ${{ github.event.pull_request.head.sha }}
+        generate_release_notes: true
+        tag_name: ${{ needs.version.outputs.tag }}
