@@ -1,9 +1,9 @@
 import textwrap
 import hedy
 from hedy import Command
-from hedy_sourcemap import SourceRange
+from hedy.sourcemap import SourceRange
 from parameterized import parameterized
-from tests.Tester import HedyTester, SkippedMapping
+from ..Tester import HedyTester, SkippedMapping
 
 
 class TestsLevel2(HedyTester):

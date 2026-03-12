@@ -1,0 +1,131 @@
+_color_literal : black | blue | brown | gray | green | orange | pink | purple | red | white | yellow
+_print_ask_argument: (_SPACE | textwithoutspaces)*
+ask: var _IS _ASK _SPACE? (_print_ask_argument)?
+assign: var _IS textwithinnerspaces _SPACE? -> assign
+command: print | ask | play | turtle | error_invalid_space | empty_line | error_ask_dep_2 | error_ask_missing_variable | assign | error_echo_dep_2 | error_non_decimal | sleep | error_invalid
+error_ask_dep_2: _ASK not_letter_or_numeral error_text_dep_2?
+error_ask_missing_variable: _STANDALONE_IS _SPACE _ASK _SPACE? text
+error_echo_dep_2: _ECHO error_text_dep_2?
+error_invalid.-100: textwithoutspaces text?
+error_invalid_space: _SPACE any
+error_non_decimal: ((textwithoutspaces | _SPACE)*)? NON_DECIMAL (text*)?
+error_text_dep_2: /([^\n#]+)/ -> text //anything can be parsed except for a newline and a comment hash
+not_letter_or_numeral: /[^\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}_\p{Mn}\p{Mc}\p{Nd}\p{Pc}·]+/ -> text
+play: _PLAY (textwithoutspaces)?
+print: _PRINT (_print_ask_argument)?
+program: _EOL* (command _EOL+)* command?
+sleep: _SLEEP (INT | var_access)?
+start: program
+text: /([^\n#]+)/ -> text
+textwithinnerspaces: /([^\n#]*[^\n# ])/ -> text
+textwithoutspaces: /([^\n #]+)/ -> text
+turtle: _FORWARD (NUMBER | textwithoutspaces)? -> forward | _TURN ((NUMBER | textwithoutspaces))? -> turn | _COLOR ((black | blue | brown | gray | green | orange | pink | purple | red | white | yellow | textwithoutspaces))? -> color
+var: NAME // used for variable definitions, e.g. a = 1
+var_access: NAME // used for variable references, e.g. for i in range. It parses the same as var, but does not result in a lookup table entry
+var_access_print: NAME // used for variable references in print statements, e.g. print a.  Parses the same as var_access but need to be processed differently in the tree for handling the varunquotedexception
+_DEFINE: ("définis" | "define") _SPACE?
+_CALL: ("appelle" | "call") _SPACE?
+_WITH: ("avec" | "with") _SPACE?
+_DEF: ("def" | "def") _SPACE?
+_RETURN: ("return" | "return") _SPACE?
+_PRINT: ("affiche" | "print") _SPACE?
+_PLAY: ("joue" | "play") _SPACE
+_ASK: ("demande" | "ask")
+_ECHO: ("réponds" | "echo") _SPACE?
+_FORWARD: ("avance" | "forward") _SPACE?
+_TURN: ("tourne" | "turn") _SPACE?
+left: ("gauche" | "left") _SPACE?
+right: ("droite" | "right") _SPACE?
+black: ("noir" | "black") _SPACE?
+blue: ("bleu" | "blue") _SPACE?
+brown: ("marron" | "brown") _SPACE?
+gray: ("gris" | "gray") _SPACE?
+green: ("vert" | "green") _SPACE?
+orange: ("orange" | "orange") _SPACE?
+pink: ("rose" | "pink") _SPACE?
+purple: ("violet" | "purple") _SPACE?
+red: ("rouge" | "red") _SPACE?
+white: ("blanc" | "white") _SPACE?
+yellow: ("jaune" | "yellow") _SPACE?
+_IS: _SPACE ("est" | "is") _SPACE
+_STANDALONE_IS: ("est" | "is")
+_SLEEP: ("dors" | "sleep") _SPACE?
+_ADD_LIST: ("ajoute" | "add") _SPACE
+_TO_LIST: _SPACE? ("à" | "to")
+_REMOVE: ("supprime" | "remove") _SPACE
+_FROM: _SPACE? ("de" | "from")
+_AT: _SPACE ("au" | "at") _SPACE
+random: ("hasard" | "random") _SPACE?
+_IN: _SPACE ("dans" | "in") _SPACE
+_NOT_IN: _SPACE ("pas dans" | "not in") _SPACE
+_IF: ("si" | "if") _SPACE
+_ELSE: "sinon" | "else"
+_AND: _SPACE? ("et" | "and") _SPACE
+_REPEAT: ("répète" | "repete" | "repeat") _SPACE
+_TIMES: _SPACE ("fois" | "times")
+_FOR: ("pour" | "for") _SPACE
+_RANGE: ("intervalle" | "range") _SPACE?
+_TO: _SPACE ("à" | "to") _SPACE
+_STEP: "pas" | "step"
+_ELIF: _SPACE? ("sinon si" | "elif") _SPACE
+_INPUT: ("demande" | "input")
+_OR: _SPACE? ("ou" | "or") _SPACE
+_WHILE: ("tant que" | "while") _SPACE
+_LENGTH: "longueur" | "length"
+_COLOR : ("couleur" | "color") _SPACE?
+_PRESSED: ("pressé" | "pressed") _SPACE?
+clear: ("effacer" | "clear") _SPACE?
+TRUE: ("vrai" | "Vrai" | "true" | "True") _SPACE?
+FALSE: ("faux" | "Faux" | "false" | "False") _SPACE?
+
+// If the comment takes up the whole line, it should also encompass its leading newline. In this way the whole
+// comment line can be skipped for the commands containing it. Comments should escape ENDBLOCKS not only in the start
+// but at any point, because if the body of a command (e.g. `if`) ends up with a comment, the ENDBLOCK would appear
+// right after it. Therefore, the ENDBLOCK should not be counted as a part of the comment.
+COMMENT: /[\n ]*\#(?!ENDBLOCK)(?:[^\n#]|#(?!ENDBLOCK))*/
+%ignore COMMENT
+
+// Internal symbol added by the preprocess_blocks function to indicate the end of blocks
+_END_BLOCK: "#ENDBLOCK"
+
+NEGATIVE_NUMBER: _MINUS /\p{Nd}+/ ("." /\p{Nd}+/)?
+POSITIVE_NUMBER: /\p{Nd}+/ ("." /\p{Nd}+/)?
+NUMBER: NEGATIVE_NUMBER | POSITIVE_NUMBER
+INT: _MINUS? /\p{Nd}+/
+NON_DECIMAL: _MINUS? /[\p{Nl}\p{No}]+/
+
+// FH Sept 2021: More info on this variable format: https://www.unicode.org/reports/tr31/tr31-1.html
+// Exact grammar stolen from: https://lark-parser.readthedocs.io/en/latest/classes.html
+
+NAME: LETTER_OR_UNDERSCORE LETTER_OR_NUMERAL*
+LETTER_OR_UNDERSCORE: /[\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}_]+/
+LETTER_OR_NUMERAL: LETTER_OR_UNDERSCORE | /[\p{Mn}\p{Mc}\p{Nd}\p{Pc}·]+/
+
+//symbols. they start with an underscore so they don't appear in the parse tree (Lark convention)
+_EOL: "\r"?"\n"+
+_SPACE: " "+
+_COMMA: _SPACE? (","|"،"|"，"|"、") _SPACE? //support latin and arabic and Chinese commas and always allow these to be surrounded by spaces
+_COLON: _SPACE? ":" _SPACE? | _SPACE? "：" _SPACE?
+_LEFT_BRACKET : _SPACE? "(" _SPACE? | _SPACE? "（" _SPACE?
+_RIGHT_BRACKET : _SPACE? ")" _SPACE? | _SPACE? "）" _SPACE?
+_LEFT_SQUARE_BRACKET :  _SPACE? "[" _SPACE?
+_RIGHT_SQUARE_BRACKET : _SPACE? "]" _SPACE?
+_HASH: "#"
+_SMALLER : _SPACE? "<" _SPACE?
+_LARGER: _SPACE? ">" _SPACE?
+_EQUALS: _SPACE? "=" _SPACE? //always allow = to be surrounded by spaces
+_DOUBLE_EQUALS: _SPACE? "==" _SPACE?
+_NOT_EQUALS: _SPACE? "!=" _SPACE?
+_SMALLER_EQUALS : _SPACE? "<=" _SPACE?
+_LARGER_EQUALS: _SPACE? ">=" _SPACE?
+_SINGLE_QUOTE: "'" | "‘" | "’"
+_DOUBLE_QUOTE: "\"" | "“" | "”"
+_QUOTE: _SINGLE_QUOTE | _DOUBLE_QUOTE
+_PLUS: _SPACE? "+" _SPACE?
+_MINUS: _SPACE? "-" _SPACE?
+_MULTIPLY: _SPACE? "*" _SPACE?
+_DIVIDE: _SPACE? "/" _SPACE?
+
+
+empty_line: _SPACE
+any: /.+/ -> text

@@ -2,11 +2,11 @@ import textwrap
 
 from parameterized import parameterized
 
-import exceptions
+from hedy import exceptions
 import hedy
 from hedy import Command
-from hedy_sourcemap import SourceRange
-from tests.Tester import HedyTester, SkippedMapping
+from hedy.sourcemap import SourceRange
+from ..Tester import HedyTester, SkippedMapping
 
 
 class TestsLevel4(HedyTester):

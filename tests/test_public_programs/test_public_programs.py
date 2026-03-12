@@ -1,11 +1,9 @@
 import json
 import hedy
-from tests.Tester import HedyTester, Snippet
+from ..Tester import HedyTester, Snippet
 from parameterized import parameterized
-from app import create_app
-from hedy_error import get_error_text
-from flask_babel import force_locale
-import exceptions
+from hedy.error import get_error_text
+from hedy import exceptions
 
 most_recent_file_name = 'tests/test_public_programs/filtered-programs-2023-12-12.json'
 public_snippets = []
@@ -69,16 +67,13 @@ class TestsPublicPrograms(HedyTester):
                 except BaseException:
                     location = 'No Location Found'
 
-                # Must run this in the context of the Flask app, because FlaskBabel requires that.
-                with create_app().app_context():
-                    with force_locale('en'):
-                        error_message = get_error_text(E, 'en')
-                        error_message = error_message.replace('<span class="command-highlighted">', '`')
-                        error_message = error_message.replace('</span>', '`')
-                        print(f'\n----\n{snippet.code}\n----')
-                        print(f'in language {snippet.language} from level {snippet.level} gives error:')
-                        print(f'{error_message} at line {location}')
-                        raise E
+                error_message = get_error_text(E, 'en')
+                error_message = error_message.replace('<span class="command-highlighted">', '`')
+                error_message = error_message.replace('</span>', '`')
+                print(f'\n----\n{snippet.code}\n----')
+                print(f'in language {snippet.language} from level {snippet.level} gives error:')
+                print(f'{error_message} at line {location}')
+                raise E
 
         # # test if we are not validating previously incorrect programs
         # if snippet is not None and len(snippet.code) > 0 and snippet.error:

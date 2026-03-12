@@ -1,3 +1,57 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build >= 0.10.7, <0.11.0"]
+build-backend = "uv_build"
+
+[project]
+name = "hedy"
+version = "0.0.1"
+authors = [
+  { name="Felienne Hermans", email="felienne@gmail.com" },
+]
+description = "Hedy is a gradual programming language to teach children programming. Gradual languages use different language levels, where each level adds new concepts and syntactic complexity. At the end of the Hedy level sequence, kids master a subset of syntactically valid Python."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+dependencies = [
+  # We cannot go higher than this, because starting 1.2.1+
+  # we parse "100" as text instead of a number.
+  "lark==1.1.9",
+  "iso-639",
+  "iso3166",
+  "Unidecode",
+  "ruamel.yaml~=0.18",
+  "regex==2021.8.28",
+  "hypothesis==6.98.4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "hatch",
+  "pytest==9.0.2",
+  "pylint==4.0.4",
+  "parameterized==0.8.1",
+  "build==1.4.0",
+  "twine",
+  "parameterized==0.8.1",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/hedyorg/hedy"
+Issues = "https://github.com/hedyorg/hedy/issues"
+
+[tool.doit]
+backend = "json"
+dep_file = ".doit.db.json"
+
+[tool.doit.plugins.command]
+watch = "doit_watch:Watch"
+
+[tool.hatch.envs.hatch-test]
+default-args = ["tests"]

@@ -1,9 +1,9 @@
 from parameterized import parameterized
 
 import hedy
-import hedy_translation
+import hedy.translation as hedy_translation
 # from test_level_01 import HedyTester
-from tests.Tester import HedyTester
+from ..Tester import HedyTester
 
 # tests should be ordered as follows:
 # * Translation from English to Dutch

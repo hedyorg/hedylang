@@ -2,9 +2,9 @@ import textwrap
 
 from parameterized import parameterized
 
-import exceptions
+from hedy import exceptions
 import hedy
-from tests.Tester import HedyTester
+from ..Tester import HedyTester
 
 
 class TestsLevel15(HedyTester):
@@ -460,7 +460,7 @@ class TestsLevel15(HedyTester):
             else:
                 score = -1
             return score
-            
+
         answer = input ('Where can you find the Eiffel Tower?')
         correct_answer = 'Paris'
         score = calculate_score(answer, correct_answer)
