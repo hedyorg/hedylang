@@ -4,13 +4,13 @@ add: _ADD_LIST text_add_remove_list _TO_LIST _SPACE var_access
 ask: var _IS _ASK _SPACE? (_print_ask_argument)?
 assign: var _IS (list_access | textwithinnerspaces) _SPACE? -> assign
 assign_list: var _IS textwithinnerspaces (_COMMA textwithinnerspaces)+ _SPACE?
-command: print | ask | play | turtle | error_invalid_space | empty_line | error_ask_dep_2 | error_ask_missing_variable | assign | error_echo_dep_2 | error_non_decimal | sleep | assign_list | add | remove | error_add_missing_to | error_remove_missing_from | error_add_missing_list | error_remove_missing_list | error_invalid | error_invalid
+command: print | ask | play | turtle | error_invalid_space | empty_line | error_ask_dep_2 | error_ask_missing_variable | assign | error_echo_dep_2 | error_non_decimal | sleep | assign_list | add | remove | error_add_missing_to | error_remove_missing_from | error_add_missing_list | error_remove_missing_list | error_invalid
 error_add_missing_list: _ADD_LIST text_add_remove_list _TO_LIST _SPACE?
 error_add_missing_to: _ADD_LIST text_add_remove_list _SPACE?
 error_ask_dep_2: _ASK not_letter_or_numeral error_text_dep_2?
 error_ask_missing_variable: _STANDALONE_IS _SPACE _ASK _SPACE? text
 error_echo_dep_2: _ECHO error_text_dep_2?
-error_invalid.-100: textwithoutspaces _SPACE* text?
+error_invalid.-100: textwithoutspaces text?
 error_invalid_space: _SPACE any
 error_non_decimal: ((textwithoutspaces | _SPACE)*)? NON_DECIMAL (text*)?
 error_remove_missing_from: _REMOVE text_add_remove_list _SPACE?

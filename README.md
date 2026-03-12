@@ -17,14 +17,17 @@ $ brew install uv
 After cloning:
 
 ```
+$ uv run doit test
+
+# Or
+$ uv run doit lark
 $ uv run pytest
 ```
 
 Releasing:
 
 ```
-(.venv)$ uv build
-(.venv)$ uv publish
+$ uv run doit publish
 ```
 
 ## Thanks to all Contributors

@@ -28,6 +28,7 @@ dependencies = [
   "ruamel.yaml~=0.18",
   "regex==2021.8.28",
   "hypothesis==6.98.4",
+  "doit",
 ]
 
 [project.optional-dependencies]

@@ -6,3 +6,4 @@ __pycache__
 .hypothesis/
 hedy.egg-info/
 src/.test-cache/
+.doit.db.json
