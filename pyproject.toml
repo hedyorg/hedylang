@@ -2,8 +2,11 @@
 requires = ["uv_build >= 0.10.7, <0.11.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "hedy"
+
 [project]
-name = "hedy"
+name = "hedylang"
 version = "0.0.1"
 authors = [
   { name="Felienne Hermans", email="felienne@gmail.com" },
