@@ -24,6 +24,16 @@ def task_lark():
     )
 
 
+def task_pretest():
+    """Collect all tasks that need to happen before testing can work."""
+    return dict(
+        title=lambda _: 'Prepare the project for testing',
+        task_dep=['lark'],
+        actions=[
+        ],
+    )
+
+
 def task_build():
     """Build the project."""
     return dict(
@@ -39,7 +49,7 @@ def task_test():
     """Run the tests."""
     return dict(
         title=lambda _: 'Run the tests',
-        task_dep=['lark'],
+        task_dep=['pretest'],
         actions=[
             ['uv', 'run', 'pytest'],
         ],
