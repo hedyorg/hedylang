@@ -69,6 +69,7 @@ jobs:
 
     - name: Run tests
       run: |
+        # This updates files that are necessary for publishing
         uv run doit pretest
         uv run pytest
 
