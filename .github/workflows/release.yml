@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
       with:
-        fetch-tags: true  # Ensure tags are fetched for versioning
+        fetch-depth: 0   # Fetches tags
 
     - name: Check if current version is already published
       id: version
