@@ -24,11 +24,11 @@ $ uv run doit lark
 $ uv run pytest
 ```
 
-Releasing:
+## Releasing new versions
 
-```
-$ uv run doit publish
-```
+A GitHub Actions Workflow will be automatically release new versions to PyPI if the file named `VERSION` in the root of the repository is changed to a different version number.
+
+After publishing it becomes available for use in https://github.com/hedyorg/hedy, by updating `requirements.txt` to reference the new version.
 
 ## Thanks to all Contributors
 
