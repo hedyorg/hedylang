@@ -20,7 +20,7 @@ After cloning:
 $ uv run doit test
 
 # Or
-$ uv run doit lark
+$ uv run doit pretest
 $ uv run pytest
 ```
 
