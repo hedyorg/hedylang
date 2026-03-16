@@ -12,8 +12,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0   # Fetches tags
+
+    - name: Fetch tags
+      run: git fetch --prune --unshallow --tags
 
     - name: Check if current version is already published
       id: version
