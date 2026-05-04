@@ -1800,11 +1800,6 @@ class ConvertToPython(Transformer):
 @hedy_transpiler(level=1)
 @source_map_transformer(source_map)
 class ConvertToPython_1(ConvertToPython):
-
-    def __init__(self, lookup, language, is_debug, has_pressed):
-        super().__init__(lookup, language, is_debug, has_pressed)
-        __class__.level = 1
-
     def program(self, meta, args):
         lines = [str(a) for a in args]
         if self.has_pressed:
@@ -2175,11 +2170,6 @@ class ConvertToPython_4(ConvertToPython_3):
     def process_print_ask_args(self, args, meta, var_to_escape=''):
         self.check_variable_usage_and_definition(args, meta.line)
         return ''.join([self.process_arg_for_fstring(a, meta.line) for a in args])
-
-    def print(self, meta, args):
-        argument_string = self.process_print_ask_args(args, meta)
-        ex = self.make_index_error_check_if_list(args)
-        return f"{ex}print(f'{argument_string}'){self.add_debug_breakpoint()}"
 
     def ask(self, meta, args):
         var = args[0]
@@ -4241,15 +4231,3 @@ def transpile_inner(input_string, level, lang="en", populate_source_map=False, i
                 raise E.orig_exc
             else:
                 raise E
-
-
-def execute(input_string, level):
-    python = transpile(input_string, level)
-    if python.has_turtle:
-        raise exceptions.HedyException("hedy.execute doesn't support turtle")
-    exec(python.code)
-
-
-def transpile_and_return_python(input_string, level):
-    python = transpile(input_string, level, microbit=True)
-    return str(python.code)
