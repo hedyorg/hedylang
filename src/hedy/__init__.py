@@ -4,6 +4,8 @@ from .prefixes.normal import get_num_sys
 from .prefixes.music import present_in_notes_mapping
 from hedy.sourcemap import SourceMap, source_map_transformer
 from hedy.content import KEYWORDS
+import dataclasses as dc
+import functools as ft
 import tempfile
 import logging
 import pickle
@@ -21,7 +23,6 @@ from . import translation as hedy_translation
 from . import grammar as hedy_grammar
 from . import error as hedy_error
 import textwrap
-from functools import lru_cache
 
 import lark
 from lark import Lark
@@ -503,6 +504,27 @@ type Role = (
 )
 
 
+@dc.dataclass(frozen=True)
+class AstInfo:
+    source_map: SourceMap
+    commands: list[str]
+    roles_of_variables: dict[str, Role]
+
+    @ft.cached_property
+    def has_turtle(self): return self._has_any_cmds(Command.forward, Command.turn, Command.color)
+    @ft.cached_property
+    def has_pressed(self): return self._has_any_cmds('if_pressed', 'if_pressed_else')
+    @ft.cached_property
+    def has_clear(self): return self._has_any_cmds(Command.clear)
+    @ft.cached_property
+    def has_music(self): return self._has_any_cmds(Command.play)
+    @ft.cached_property
+    def has_sleep(self): return self._has_any_cmds(Command.sleep)
+
+    def _has_any_cmds(self, *cmds: str):
+        return any(c in self.commands for c in cmds)
+
+
 class ParseResult(NamedTuple):
     code: str
     source_map: SourceMap
@@ -513,6 +535,12 @@ class ParseResult(NamedTuple):
     has_sleep: bool
     commands: list[str]
     roles_of_variables: dict[str, Role]
+
+    @classmethod
+    def build(cls, code: str, info: AstInfo):
+        bools = (info.has_turtle, info.has_pressed, info.has_clear, info.has_music, info.has_sleep)
+        return cls(code, info.source_map, *bools, info.commands, info.roles_of_variables)
+
 
 
 @dataclass
@@ -3647,7 +3675,7 @@ def _restore_parser_from_file_if_present(pickle_file):
     return None
 
 
-@lru_cache(maxsize=0 if is_production() else 100)
+@ft.lru_cache(maxsize=0 if is_production() else 100)
 def get_parser(level, lang="en", keep_all_tokens=False, skip_faulty=False):
     """Return the Lark parser for a given level.
     Parser generation takes about 0.5 seconds depending on the level so
@@ -4236,20 +4264,13 @@ def transpile_inner(input_string: str, level: int, lang="en", populate_source_ma
         abstract_syntax_tree, lookup_table, commands = create_AST(input_string, level, lang)
         log['ast'].debug(repr_tree(abstract_syntax_tree))
 
-        has_clear = "clear" in commands
-        has_turtle = "forward" in commands or "turn" in commands or "color" in commands
-        has_pressed = "if_pressed" in commands or "if_pressed_else" in commands
-        has_music = "play" in commands
-        has_sleep = "sleep" in commands
+        roles_of_variables = determine_roles(lookup_table, input_string, level, lang)
+        info = AstInfo(source_map, commands, roles_of_variables)
 
         # grab the right transpiler from the lookup
         convertToPython = MICROBIT_TRANSPILER_LOOKUP[level] if microbit else TRANSPILER_LOOKUP[level]
-        python = convertToPython(lookup_table, lang, is_debug, has_pressed).transform(abstract_syntax_tree)
-
-        roles_of_variables = determine_roles(lookup_table, input_string, level, lang)
-
-        parse_result = ParseResult(python, source_map, has_turtle, has_pressed,
-                                   has_clear, has_music, has_sleep, commands, roles_of_variables)
+        python = convertToPython(lookup_table, lang, is_debug, info.has_pressed).transform(abstract_syntax_tree)
+        parse_result = ParseResult.build(python, info)
 
         if populate_source_map:
             source_map.set_python_output(python)
