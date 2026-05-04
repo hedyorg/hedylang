@@ -173,7 +173,7 @@ class HedyTester(unittest.TestCase):
             sys.stdout, sys.stderr = old_out, old_err
 
     @staticmethod
-    def run_code(parse_result):
+    def run_code(parse_result: hedy.ParseResult):
         code = hedy.lang_utils.NORMAL_PREFIX_CODE
 
         if parse_result.has_turtle:
@@ -219,7 +219,7 @@ class HedyTester(unittest.TestCase):
             max_level=hedy.HEDY_MAX_LEVEL,
             expected=None,
             exception=None,
-            skipped_mappings: 'list[SkippedMapping]' = None,
+            skipped_mappings: list[SkippedMapping] | None = None,
             extra_check_function=None,
             expected_commands=None,
             unused_allowed=False,
@@ -268,7 +268,7 @@ class HedyTester(unittest.TestCase):
             code,
             level=None,
             exception=None,
-            skipped_mappings: 'list[SkippedMapping]' = None,
+            skipped_mappings: list[SkippedMapping] | None = None,
             expected=None,
             extra_check_function=None,
             output=None,
