@@ -5,6 +5,7 @@ from .prefixes.music import present_in_notes_mapping
 from hedy.sourcemap import SourceMap, source_map_transformer
 from hedy.content import KEYWORDS
 import tempfile
+import logging
 import pickle
 import os
 import hashlib
@@ -32,6 +33,10 @@ import sys
 from typing import Literal, NamedTuple, Generic, TypeVar
 
 T = TypeVar('T')
+
+log = {
+    'ast': logging.getLogger('hedy.ast'),
+}
 
 # This is so that all the 'hedy.exception' references below still work
 hedy = sys.modules[__name__]
@@ -4160,6 +4165,15 @@ def create_lookup_table(abstract_syntax_tree, level, lang, input_string, has_pre
     return lookup_table
 
 
+def repr_tree(branch: lark.tree.Branch[lark.Token]):
+    if not (isinstance(branch, lark.Tree) and branch.children):
+        return repr(branch)
+
+    repr_children = ''.join(repr_tree(t) + ',\n' for t in branch.children)
+    indented_children = textwrap.indent(repr_children, '    ')
+    return f"Tree({branch.data!r}, [\n{indented_children}])"
+
+
 def create_AST(input_string, level, lang="en"):
     program_root = parse_input(input_string, level, lang)
 
@@ -4220,6 +4234,7 @@ def transpile_inner(input_string: str, level: int, lang="en", populate_source_ma
 
     try:
         abstract_syntax_tree, lookup_table, commands = create_AST(input_string, level, lang)
+        log['ast'].debug(repr_tree(abstract_syntax_tree))
 
         has_clear = "clear" in commands
         has_turtle = "forward" in commands or "turn" in commands or "color" in commands
