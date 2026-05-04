@@ -1642,12 +1642,12 @@ def hedy_transpiler(level, microbit=False):
 
 @v_args(meta=True)
 class ConvertToPython(Transformer[lark.Token, str]):
-    def __init__(self, lookup: LookupTable, language="en", is_debug=False, has_pressed=False):
+    def __init__(self, lookup: LookupTable, info: AstInfo, language="en", is_debug=False, has_pressed=False):
         super().__init__()
         self.lookup: LookupTable = lookup
+        self.info: AstInfo = info
         self.language: str = language
         self.is_debug: bool = is_debug
-        self.has_pressed: bool = has_pressed
 
     def add_debug_breakpoint(self):
         if self.is_debug:
@@ -1747,7 +1747,7 @@ class ConvertToPython(Transformer[lark.Token, str]):
         return f"{{{arg}}}"
 
     def scoped_var_access(self, name, line, parentheses=False):
-        if self.has_pressed:
+        if self.info.has_pressed:
             loc_scope = self.lookup.try_get_local_scope(line)
             if loc_scope:
                 ls_name = f'local_scope_{loc_scope[0]}_'
@@ -1758,7 +1758,7 @@ class ConvertToPython(Transformer[lark.Token, str]):
         return f"{name}"
 
     def scoped_var_assign(self, name, line):
-        if self.has_pressed:
+        if self.info.has_pressed:
             loc_scope = self.lookup.try_get_local_scope(line)
             scope_name = f'local_scope_{loc_scope[0]}_' if loc_scope else 'global_scope_'
             return f'{scope_name}["{name}"]'
@@ -1862,7 +1862,7 @@ class ConvertToPython(Transformer[lark.Token, str]):
 class ConvertToPython_1(ConvertToPython):
     def program(self, meta, args):
         lines = [str(a) for a in args]
-        if self.has_pressed:
+        if self.info.has_pressed:
             lines.insert(0, "global_scope_ = dict()")
         return '\n'.join(lines)
 
@@ -2006,7 +2006,7 @@ class ConvertToPython_1(ConvertToPython):
             random_access = fr"(random\.choice\(({var})\))"
             return f"{index}|{random_access}|{index_pressed}"
 
-        var_regex = scoped_var if self.has_pressed else simple_var
+        var_regex = scoped_var if self.info.has_pressed else simple_var
         list_regex = build_regex_for_var(var_regex)
 
         list_args = {}
@@ -2025,7 +2025,7 @@ class ConvertToPython_1(ConvertToPython):
         if list_name.endswith('.data'):
             list_name = list_name[:-5]
         # if has_pressed is True, then list references look like `(global_scope_.get('animals') or animals).data`
-        if self.has_pressed:
+        if self.info.has_pressed:
             list_name = list_name.strip(')')
             list_name = list_name.split('or')[-1].strip()
         exception_text = make_error_text(exceptions.RuntimeIndexException(name=list_name), self.language)
@@ -2287,7 +2287,7 @@ class ConvertToPython_5(ConvertToPython_4):
         else:
             if self.is_variable(index, meta.line):
                 index = self.scoped_var_access(index, meta.line)
-            list_name = f'({list_name})' if self.has_pressed else list_name
+            list_name = f'({list_name})' if self.info.has_pressed else list_name
             return f'{list_name}[int({index})-1]'
 
     def add(self, meta, args):
@@ -3240,7 +3240,7 @@ class ConvertToPython_12(ConvertToPython_11):
 
         body_start = 2 if has_args else 1
         lines = args[body_start:]
-        if self.has_pressed:
+        if self.info.has_pressed:
             init_value = 'dict()'
             if has_args:
                 init_value = f'''{{{', '.join(f'"{str(x)}": {str(x)}' for x in args[1].children)}}}'''
@@ -4269,7 +4269,7 @@ def transpile_inner(input_string: str, level: int, lang="en", populate_source_ma
 
         # grab the right transpiler from the lookup
         convertToPython = MICROBIT_TRANSPILER_LOOKUP[level] if microbit else TRANSPILER_LOOKUP[level]
-        python = convertToPython(lookup_table, lang, is_debug, info.has_pressed).transform(abstract_syntax_tree)
+        python = convertToPython(lookup_table, info, lang, is_debug).transform(abstract_syntax_tree)
         parse_result = ParseResult.build(python, info)
 
         if populate_source_map:
