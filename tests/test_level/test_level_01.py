@@ -1,5 +1,11 @@
+import io
+import itertools as it
+import functools as ft
+import re
+
 import textwrap
 import hedy
+import hedy.translation
 from hedy import Command
 from hedy.external import get_frontend_feature_flags_context, initialize_frontend_feature_flags_from_context
 from hedy.sourcemap import SourceRange
@@ -7,6 +13,101 @@ from ..Tester import HedyTester, SkippedMapping
 
 from hypothesis import given, settings
 import hypothesis.strategies
+
+import pytest
+
+
+def closed_range(start, stop, step=1):
+  inclusive = 1 if (step > 0) else -1
+  return range(start, stop + inclusive, step)
+
+
+def hedy_stdout(code: str, lvl=1, lang='en'):
+    result = hedy.transpile(code, lvl, lang)
+    assert result
+
+    # TODO: replace these with transpilation flags
+    rgx_subs = [ft.partial(re.compile(pat).sub, repl) for pat, repl in {
+        r'time\.sleep\([^\n]*\)': 'pass',
+        r'print\(([^\n]*)\)': r'print(\1, file=hedy_stdout)',
+    }.items()]
+    user_code = ft.reduce(lambda c, sub: sub(c), rgx_subs, result.code)
+    run_code = hedy.lang_utils.NORMAL_PREFIX_CODE + user_code
+
+    local_vars = {'hedy_stdout': io.StringIO()}
+    exec(run_code, globals=None, locals=local_vars)
+    return local_vars['hedy_stdout'].getvalue()
+
+
+#
+# print tests
+#
+@pytest.mark.parametrize('name, code, expected', [
+    ('simple',           "print Hallo welkom bij Hedy!",     "Hallo welkom bij Hedy!"),
+    ('number',           "print 10",                         "10"),
+    ('Arabic',           "print ١١",                         "١١"),
+    ('spaces',           "print        hallo!",              "hallo!"),
+    ('no space',         "printHallo welkom bij Hedy!",      "Hallo welkom bij Hedy!"),
+    ('comma',            "print one, two, three",            "one, two, three"),
+
+    ('multiline',        "print Hallo welkom bij Hedy\nprint Mooi hoor", "Hallo welkom bij Hedy\nMooi hoor"),
+    ('line /w spaces',   "print hallo\n      \nprint hallo",             "hallo\nhallo"),
+
+    # escaping
+    ('single quote',     "print 'Welcome to OceanView!'", "'Welcome to OceanView!'"),
+    ('double quote',     'print "Welcome to OceanView!"', '"Welcome to OceanView!"'),
+    ('inner single',     "print Welcome to Hedy's game!", "Welcome to Hedy's game!"),
+    ('inner double',     'print It says "Hedy"',          'It says "Hedy"'),
+    ('slash',            "print Yes/No",                  "Yes/No"),
+    ('backslash',        "print Yes\\No",                 "Yes\\No"),
+    ('ending backslash', "print Welcome to \\",           "Welcome to \\"),
+])
+def test_print_successfully(name, code, expected):
+    output = hedy_stdout(code)
+    assert output == expected + '\n', f"{name}: {repr(code)=}"
+
+
+@pytest.mark.parametrize('name, code, expected, opts', [
+    ('simple',   "print Hallo welkom bij Hedy!", "print(f'Hallo welkom bij Hedy!')", {}),
+    ('no space', "printHallo welkom bij Hedy!",  "print(f'Hallo welkom bij Hedy!')", {}),
+    *[
+        (f"microbit lvl {lv}", "print a", "display.scroll('a')", {'microbit': True, 'skip_faulty': False, 'lvl': lv})
+        for lv in closed_range(1, 3)
+    ]
+])
+def test_print_transpile(name, code, expected, opts):
+    result = hedy.transpile(code, opts.pop('lvl', 1), **opts)
+    assert result and result.code == expected, f"{name}: {code=}"
+    assert result.commands == [Command.print]
+
+
+@pytest.mark.parametrize('lang', [
+    # a nice mix of latin/non-latin and l2r and r2l!
+    'ar', 'ca', 'sq', 'bg', 'es', 'fi', 'fr', 'he', 'nl', 'hi', 'ur', 'te', 'th', 'vi', 'uk', 'tr',
+])
+def test_print_translate(lang):
+    en_print = 'print Hello World'
+    xlated = hedy.translation.translate_keywords(en_print, 'en', lang, 1)
+    actual = hedy.translation.translate_keywords(xlated, lang, 'en', 1)
+    assert actual == en_print
+
+
+@pytest.mark.parametrize('name, code, expected', [
+    ('ar',                      "قول أهلا ومرحبا بكم في هيدي!", "print(f'أهلا ومرحبا بكم في هيدي!')"),
+    ('ar tatweel',              "قول لــــ",                   "print(f'لــــ')"),
+    ('ar tatweel begin',        "ـــقول أ",                    "print(f'أ')"),
+    ('ar tatweel multiple end', "ـــقــوـلــــ أ",             "print(f'أ')"),
+    ('ar tatweel all places',   "ـــقــولـ أ",                 "print(f'أ')"),
+    ('ar 2',                    "قول مرحبا أيها العالم!",      "print(f'مرحبا أيها العالم!')"),
+
+    # FH, May 2022, sadly beginning a string with tatweel does not work
+    # would need complex changes to the grammar (documented further in the grammar of level 1)
+    # so I am leaving this as it is for now
+    # ('ar tatweel itself',       "قول ـ",                       "ـ"),
+])
+def test_print_transpile_ar(name, code, expected):
+    result = hedy.transpile(code, 1, lang='ar')
+    assert result and result.code == expected, f"{name}: {code=}"
 
 
 class TestsLevel1(HedyTester):
@@ -24,246 +125,6 @@ class TestsLevel1(HedyTester):
      * multi keyword positive tests are keyword1_keywords_2
      * negative tests should be situation_gives_exception
     '''
-
-    #
-    # print tests
-    #
-    def test_print(self):
-        code = "print Hallo welkom bij Hedy!"
-        expected = "print(f'Hallo welkom bij Hedy!')"
-        output = 'Hallo welkom bij Hedy!'
-        expected_commands = [Command.print]
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output=output,
-            expected_commands=expected_commands
-        )
-
-    def test_print_number(self):
-        code = "print 10"
-        expected = "print(f'10')"
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output='10',
-            expected_commands=[Command.print]
-        )
-
-    def test_print_number_arabic(self):
-        code = "print ١١"
-        expected = "print(f'١١')"
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output='١١',
-            expected_commands=[Command.print]
-        )
-
-    def test_print_no_space(self):
-        code = "printHallo welkom bij Hedy!"
-        expected = "print(f'Hallo welkom bij Hedy!')"
-        output = 'Hallo welkom bij Hedy!'
-        expected_commands = [Command.print]
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output=output,
-            expected_commands=expected_commands
-        )
-
-    def test_print_line_with_spaces_works(self):
-        code = "print hallo\n      \nprint hallo"
-        expected = "print(f'hallo')\n\nprint(f'hallo')"
-        expected_commands = [Command.print, Command.print]
-
-        self.single_level_tester(code=code, expected=expected, expected_commands=expected_commands)
-
-    def test_print_comma(self):
-        code = "print one, two, three"
-        expected = "print(f'one, two, three')"
-        expected_commands = [Command.print]
-
-        self.single_level_tester(code=code, expected=expected, expected_commands=expected_commands)
-
-    def test_print_multiple_lines(self):
-        code = textwrap.dedent("""\
-        print Hallo welkom bij Hedy
-        print Mooi hoor""")
-
-        expected = textwrap.dedent("""\
-        print(f'Hallo welkom bij Hedy')
-        print(f'Mooi hoor')""")
-
-        output = textwrap.dedent("""\
-        Hallo welkom bij Hedy
-        Mooi hoor""")
-
-        self.single_level_tester(code=code, expected=expected, output=output)
-
-    def test_print_single_quoted_text(self):
-        code = "print 'Welcome to OceanView!'"
-        expected = "print(f'\\'Welcome to OceanView!\\'')"
-        output = "'Welcome to OceanView!'"
-
-        self.single_level_tester(code=code, expected=expected, output=output)
-
-    def test_print_double_quoted_text(self):
-        code = 'print "Welcome to OceanView!"'
-        expected = """print(f'"Welcome to OceanView!"')"""
-        output = '"Welcome to OceanView!"'
-
-        self.single_level_tester(code=code, expected=expected, output=output)
-
-    def test_print_text_with_inner_single_quote(self):
-        code = "print Welcome to Hedy's game!"
-        expected = """print(f'Welcome to Hedy\\'s game!')"""
-
-        self.single_level_tester(code=code, expected=expected)
-
-    def test_print_text_with_inner_double_quote(self):
-        code = 'print It says "Hedy"'
-        expected = """print(f'It says "Hedy"')"""
-
-        self.single_level_tester(code=code, expected=expected)
-
-    def test_print_slash(self):
-        code = "print Yes/No"
-        expected = "print(f'Yes/No')"
-        output = "Yes/No"
-
-        self.single_level_tester(code=code, expected=expected, output=output)
-
-    def test_print_backslash(self):
-        code = "print Yes\\No"
-        expected = "print(f'Yes\\\\No')"
-        output = "Yes\\No"
-
-        self.single_level_tester(code=code, expected=expected, output=output)
-
-    def test_print_backslash_at_end(self):
-        code = "print Welcome to \\"
-        expected = "print(f'Welcome to \\\\')"
-        output = "Welcome to \\"
-
-        self.single_level_tester(code=code, expected=expected, output=output)
-
-    def test_print_with_spaces(self):
-        code = "print        hallo!"
-        expected = "print(f'hallo!')"
-
-        self.single_level_tester(code=code, expected=expected)
-
-    def test_print_nl(self):
-        code = "print Hallo welkom bij Hedy!"
-        expected = "print(f'Hallo welkom bij Hedy!')"
-        output = 'Hallo welkom bij Hedy!'
-
-        self.single_level_tester(code=code, expected=expected, output=output, lang='nl')
-
-    def test_print_ar(self):
-        code = "قول أهلا ومرحبا بكم في هيدي!"
-        expected = "print(f'أهلا ومرحبا بكم في هيدي!')"
-        output = 'أهلا ومرحبا بكم في هيدي!'
-
-        self.single_level_tester(code=code, expected=expected, output=output, lang='ar')
-
-    def test_print_ar_tatweel_all_places(self):
-        code = "ـــقــولـ أ"
-        expected = "print(f'أ')"
-        output = 'أ'
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output=output,
-            translate=False,  # translation will remove the tatweels, we will deal with that later
-            lang='ar')
-
-    def test_ask_ar_tatweel_all_places(self):
-        code = "اســأل أ"
-        expected = "answer = input(f'أ')"
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            translate=False,  # translation will remove the tatweels, we will deal with that later
-            lang='ar')
-
-    # def test_print_ar_tatweel_itself(self):
-    # FH, May 2022, sadly beginning a string with tatweel does not work
-    # would need complex changes to the grammar (documented further in the grammar of level 1)
-    # so I am leaving this as it is for now
-    #     code = "قول ـ"
-    #     expected = "print('ـ')"
-    #     output = 'ـ'
-    #
-    #     self.single_level_tester(
-    #         code=code,
-    #         expected=expected,
-    #         output=output,
-    #         translate=False, #translation will remove the tatweels, we will deal with that later
-    #         lang='ar')
-
-    def test_print_ar_tatweel_printing(self):
-        code = "قول لــــ"
-        expected = "print(f'لــــ')"
-        output = 'لــــ'
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output=output,
-            translate=False,  # translation will remove the tatweels, we will deal with that later
-            lang='ar')
-
-    def test_print_ar_tatweel_begin(self):
-        code = "ـــقول أ"
-        expected = "print(f'أ')"
-        output = 'أ'
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output=output,
-            translate=False,  # translation will remove the tatweels, we will deal with that later
-            lang='ar')
-
-    def test_print_ar_tatweel_multiple_end(self):
-        code = "ـــقــوـلــــ أ"
-        expected = "print(f'أ')"
-        output = 'أ'
-
-        self.single_level_tester(
-            code=code,
-            expected=expected,
-            output=output,
-            translate=False,  # translation will remove the tatweels, we will deal with that later
-            lang='ar')
-
-    def test_print_ar_2(self):
-        code = "قول مرحبا أيها العالم!"
-        expected = "print(f'مرحبا أيها العالم!')"
-        output = 'مرحبا أيها العالم!'
-
-        self.single_level_tester(code=code, expected=expected, output=output, lang='ar')
-
-    def test_print_microbit(self):
-        code = "print a"
-        expected = "display.scroll('a')"
-
-        self.multi_level_tester(
-            code=code,
-            translate=False,
-            skip_faulty=False,
-            expected=expected,
-            max_level=3,
-            microbit=True
-        )
 
     #
     # ask tests
