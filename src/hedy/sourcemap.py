@@ -2,14 +2,10 @@ from os import path
 import re
 import textwrap
 
-from typing import TypeVar
-
 from lark import Tree
 
 from . import exceptions
 from .content import grammars_dir
-
-T = TypeVar('T')
 
 
 class SourceRange:
@@ -339,7 +335,7 @@ def source_map_transformer(source_map: SourceMap):
         This decorator add source_map_rule to all appropriate methods.
     """
 
-    def decorate(cls: type[T]):
+    def decorate(cls):
         for rule in cls.__dict__:
             if rule in source_map.grammar_rules:
                 setattr(cls, rule, source_map_rule(source_map)(getattr(cls, rule)))

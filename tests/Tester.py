@@ -1,7 +1,6 @@
 import random
 import textwrap
 from dataclasses import dataclass
-import logging
 import pickle
 import hashlib
 import hedy
@@ -21,9 +20,6 @@ from functools import cache
 
 from hedy.error import get_error_text
 import hedy
-
-
-log = logging.getLogger(__name__)  # NOTE: use `pytest --log-cli-level=INFO`, do not print() in tests!
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(hedy.__file__)))
 HEDY_PACKAGE_DIR = os.path.dirname(os.path.abspath(hedy.__file__))
@@ -177,7 +173,7 @@ class HedyTester(unittest.TestCase):
             sys.stdout, sys.stderr = old_out, old_err
 
     @staticmethod
-    def run_code(parse_result: hedy.ParseResult):
+    def run_code(parse_result):
         code = hedy.lang_utils.NORMAL_PREFIX_CODE
 
         if parse_result.has_turtle:
@@ -223,7 +219,7 @@ class HedyTester(unittest.TestCase):
             max_level=hedy.HEDY_MAX_LEVEL,
             expected=None,
             exception=None,
-            skipped_mappings: list[SkippedMapping] | None = None,
+            skipped_mappings: 'list[SkippedMapping]' = None,
             extra_check_function=None,
             expected_commands=None,
             unused_allowed=False,
@@ -243,7 +239,10 @@ class HedyTester(unittest.TestCase):
         max_level = min(max_level, hedy.HEDY_MAX_LEVEL)
 
         # make it clear in the output this is a multilevel tester
-        log.info(f"Multi-level test! levels: {self.level}-{max_level}")
+        print('\n\n\n')
+        print('-----------------')
+        print('Multi-level test!')
+        print('\n')
 
         # Or use expect to check for an expected Python program
         # In the second case, you can also pass an extra function to check
@@ -262,13 +261,14 @@ class HedyTester(unittest.TestCase):
                 output=output,
                 skip_faulty=skip_faulty,
                 microbit=microbit)
+            print(f'Passed for level {level}')
 
     def single_level_tester(
             self,
             code,
             level=None,
             exception=None,
-            skipped_mappings: list[SkippedMapping] | None = None,
+            skipped_mappings: 'list[SkippedMapping]' = None,
             expected=None,
             extra_check_function=None,
             output=None,
@@ -412,7 +412,7 @@ class HedyTester(unittest.TestCase):
         except OSError:
             return True  # programs with ask cannot be tested with output :(
         except Exception as e:
-            log.exception("Transpiled python failed validation")
+            print(e)
             return False
         return True
 
@@ -644,9 +644,11 @@ class HedyTester(unittest.TestCase):
                 else:
                     snippet.code = snippet.code.format(**english_keywords)
             except KeyError:
-                log.exception(f"Invalid placeholder: {snippet.code}")
+                print("This following snippet contains an invalid placeholder...")
+                print(snippet.code)
             except ValueError:
-                log.exception(f"Unclosed invalid placeholder: {snippet.code}")
+                print("This following snippet contains an unclosed invalid placeholder...")
+                print(snippet.code)
 
     def format_test_error_md(self, E, snippet: Snippet):
         """Given a snippet and an exception, return a Markdown string describing the problem."""

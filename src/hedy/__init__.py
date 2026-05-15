@@ -1,13 +1,8 @@
-from __future__ import annotations
-
 from .prefixes.normal import get_num_sys
 from .prefixes.music import present_in_notes_mapping
 from hedy.sourcemap import SourceMap, source_map_transformer
 from hedy.content import KEYWORDS
-import dataclasses as dc
-import functools as ft
 import tempfile
-import logging
 import pickle
 import os
 import hashlib
@@ -15,6 +10,7 @@ from ruamel import yaml
 from dataclasses import dataclass, field
 import regex
 import re
+from collections import namedtuple
 from .content import ALL_KEYWORD_LANGUAGES, MAX_LEVEL
 from .lang_utils import atomic_write_file, is_production
 from . import program_repair
@@ -24,6 +20,7 @@ from . import grammar as hedy_grammar
 from . import error as hedy_error
 from .external import is_feature_enabled
 import textwrap
+from functools import lru_cache
 
 import lark
 from lark import Lark
@@ -31,14 +28,6 @@ from lark.exceptions import UnexpectedEOF, UnexpectedCharacters, VisitError
 from lark import Tree, Transformer, visitors, v_args
 from os import path, getenv
 import sys
-
-from typing import Literal, NamedTuple, Generic, TypeVar
-
-T = TypeVar('T')
-
-log = {
-    'ast': logging.getLogger('hedy.ast'),
-}
 
 # This is so that all the 'hedy.exception' references below still work
 hedy = sys.modules[__name__]
@@ -56,8 +45,8 @@ LEVEL_STARTING_INDENTATION = 9
 local_keywords_enabled = True
 
 # dictionary to store transpilers
-TRANSPILER_LOOKUP: dict[int, type[ConvertToPython]] = {}
-MICROBIT_TRANSPILER_LOOKUP: dict[int, type[ConvertToPython]] = {}
+TRANSPILER_LOOKUP = {}
+MICROBIT_TRANSPILER_LOOKUP = {}
 
 # define source-map
 source_map = SourceMap()
@@ -495,55 +484,6 @@ def calculate_minimum_distance(s1, s2):
     return distances[-1]
 
 
-type Role = (
-    Literal['walker_variable_role'] |
-    Literal['stepper_variable_role'] |
-    Literal['list_variable_role'] |
-    Literal['input_variable_role'] |
-    Literal['constant_variable_role'] |
-    Literal['unknown_variable_role']
-)
-
-
-@dc.dataclass(frozen=True)
-class AstInfo:
-    source_map: SourceMap
-    commands: list[str]
-    roles_of_variables: dict[str, Role]
-
-    @ft.cached_property
-    def has_turtle(self): return self._has_any_cmds(Command.forward, Command.turn, Command.color)
-    @ft.cached_property
-    def has_pressed(self): return self._has_any_cmds('if_pressed', 'if_pressed_else')
-    @ft.cached_property
-    def has_clear(self): return self._has_any_cmds(Command.clear)
-    @ft.cached_property
-    def has_music(self): return self._has_any_cmds(Command.play)
-    @ft.cached_property
-    def has_sleep(self): return self._has_any_cmds(Command.sleep)
-
-    def _has_any_cmds(self, *cmds: str):
-        return any(c in self.commands for c in cmds)
-
-
-class ParseResult(NamedTuple):
-    code: str
-    source_map: SourceMap
-    has_turtle: bool
-    has_pressed: bool
-    has_clear: bool
-    has_music: bool
-    has_sleep: bool
-    commands: list[str]
-    roles_of_variables: dict[str, Role]
-
-    @classmethod
-    def build(cls, code: str, info: AstInfo):
-        bools = (info.has_turtle, info.has_pressed, info.has_clear, info.has_music, info.has_sleep)
-        return cls(code, info.source_map, *bools, info.commands, info.roles_of_variables)
-
-
-
 @dataclass
 class InvalidInfo:
     error_type: str
@@ -651,7 +591,7 @@ class TypedTree(Tree):
 
 
 @v_args(meta=True)
-class ExtractAST(Transformer[lark.Token, lark.ParseTree]):
+class ExtractAST(Transformer):
     # simplifies the tree: f.e. flattens arguments of text, var and punctuation for further processing
     def text(self, meta, args):
         return Tree('text', [' '.join([str(c) for c in args])], meta)
@@ -1180,7 +1120,7 @@ class Filter(Transformer):
         return all(args), ''.join([c for c in args]), meta
 
 
-class AllCommands(Transformer[lark.Token, list[str]]):
+class AllCommands(Transformer):
     def __init__(self, level):
         self.level = level
 
@@ -1602,17 +1542,17 @@ def add_sleep_to_command(commands, indent=True, is_debug=False, location="after"
         return sleep_command + "\n" + commands
 
 
-class BaseValue(Generic[T]):
+class BaseValue:
     """ Used to preserve localization information, such as numeral system, during transpilation. It has the following
     properties:
       - data holds the already transpiled Python value, e.g. 1, -50.5, 'Hedy', True, 'sum * 15'
       - num_sys keeps the used numeral system, e.g. 'Latin', 'Arabic'
       - bool_sys holds the actual keywords used to create the boolean value, e.g. {True: 'вярно', False: 'невярно'}"""
 
-    def __init__(self, data: T, num_sys: str | None, bool_sys: dict[bool, str] | None):
-        self.data: T = data
-        self.num_sys: str | None = num_sys
-        self.bool_sys: dict[bool, str] | None = bool_sys
+    def __init__(self, data, num_sys, bool_sys):
+        self.data = data
+        self.num_sys = num_sys
+        self.bool_sys = bool_sys
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.data}, {self.num_sys}, {self.bool_sys})"
@@ -1621,27 +1561,27 @@ class BaseValue(Generic[T]):
         return f"{self.__class__.__name__}({self.data}, {self.num_sys}, {self.bool_sys})"
 
 
-class LiteralValue(BaseValue[T]):
+class LiteralValue(BaseValue):
     """ Used to transpile numbers, booleans and texts. The `data` property contains the already transpiled value,
     e.g. 1, -50.5, 'Hedy', True, false. Note that in some cases variable access is parsed to a text node instead
     of a var_access and gets converted to a LiteralValue. If you need to check for variables, always assume they
     could come as plain strings or LiteralValues, i.e. 'variable' or LiteralValue('variable'). """
 
-    def __init__(self, data: T, num_sys=None, bool_sys=None):
+    def __init__(self, data, num_sys=None, bool_sys=None):
         super().__init__(data, num_sys, bool_sys)
 
 
-class ExpressionValue(BaseValue[T]):
+class ExpressionValue(BaseValue):
     """ Used to transpile expressions. The data property contains the already transpiled expression,
     e.g. '5 * a', 'sum_with_error(a, b, get_error('error_name'))'. """
 
-    def __init__(self, data: T, num_sys=None, bool_sys=None):
+    def __init__(self, data, num_sys=None, bool_sys=None):
         super().__init__(data, num_sys, bool_sys)
 
 
 # decorator used to store each class in the lookup table
 def hedy_transpiler(level, microbit=False):
-    def decorator(c: type[ConvertToPython]):
+    def decorator(c):
         if not microbit:
             TRANSPILER_LOOKUP[level] = c
         else:
@@ -1653,13 +1593,13 @@ def hedy_transpiler(level, microbit=False):
 
 
 @v_args(meta=True)
-class ConvertToPython(Transformer[lark.Token, str]):
-    def __init__(self, lookup: LookupTable, info: AstInfo, language="en", is_debug=False, has_pressed=False):
+class ConvertToPython(Transformer):
+    def __init__(self, lookup, language="en", is_debug=False, has_pressed=False):
         super().__init__()
-        self.lookup: LookupTable = lookup
-        self.info: AstInfo = info
-        self.language: str = language
-        self.is_debug: bool = is_debug
+        self.lookup = lookup
+        self.language = language
+        self.is_debug = is_debug
+        self.has_pressed = has_pressed
 
     def add_debug_breakpoint(self):
         if self.is_debug:
@@ -1759,7 +1699,7 @@ class ConvertToPython(Transformer[lark.Token, str]):
         return f"{{{arg}}}"
 
     def scoped_var_access(self, name, line, parentheses=False):
-        if self.info.has_pressed:
+        if self.has_pressed:
             loc_scope = self.lookup.try_get_local_scope(line)
             if loc_scope:
                 ls_name = f'local_scope_{loc_scope[0]}_'
@@ -1770,7 +1710,7 @@ class ConvertToPython(Transformer[lark.Token, str]):
         return f"{name}"
 
     def scoped_var_assign(self, name, line):
-        if self.info.has_pressed:
+        if self.has_pressed:
             loc_scope = self.lookup.try_get_local_scope(line)
             scope_name = f'local_scope_{loc_scope[0]}_' if loc_scope else 'global_scope_'
             return f'{scope_name}["{name}"]'
@@ -1872,9 +1812,14 @@ class ConvertToPython(Transformer[lark.Token, str]):
 @hedy_transpiler(level=1)
 @source_map_transformer(source_map)
 class ConvertToPython_1(ConvertToPython):
+
+    def __init__(self, lookup, language, is_debug, has_pressed):
+        super().__init__(lookup, language, is_debug, has_pressed)
+        __class__.level = 1
+
     def program(self, meta, args):
         lines = [str(a) for a in args]
-        if self.info.has_pressed:
+        if self.has_pressed:
             lines.insert(0, "global_scope_ = dict()")
         return '\n'.join(lines)
 
@@ -2031,7 +1976,7 @@ class ConvertToPython_1(ConvertToPython):
             random_access = fr"(random\.choice\(({var})\))"
             return f"{index}|{random_access}|{index_pressed}"
 
-        var_regex = scoped_var if self.info.has_pressed else simple_var
+        var_regex = scoped_var if self.has_pressed else simple_var
         list_regex = build_regex_for_var(var_regex)
 
         list_args = {}
@@ -2050,7 +1995,7 @@ class ConvertToPython_1(ConvertToPython):
         if list_name.endswith('.data'):
             list_name = list_name[:-5]
         # if has_pressed is True, then list references look like `(global_scope_.get('animals') or animals).data`
-        if self.info.has_pressed:
+        if self.has_pressed:
             list_name = list_name.strip(')')
             list_name = list_name.split('or')[-1].strip()
         exception_text = make_error_text(exceptions.RuntimeIndexException(name=list_name), self.language)
@@ -2256,6 +2201,11 @@ class ConvertToPython_4(ConvertToPython_3):
         self.check_variable_usage_and_definition(args, meta.line)
         return ''.join([self.process_arg_for_fstring(a, meta.line) for a in args])
 
+    def print(self, meta, args):
+        argument_string = self.process_print_ask_args(args, meta)
+        ex = self.make_index_error_check_if_list(args)
+        return f"{ex}print(f'{argument_string}'){self.add_debug_breakpoint()}"
+
     def ask(self, meta, args):
         var = args[0]
         argument_string = self.process_print_ask_args(args[1:], meta)
@@ -2312,7 +2262,7 @@ class ConvertToPython_5(ConvertToPython_4):
         else:
             if self.is_variable(index, meta.line):
                 index = self.scoped_var_access(index, meta.line)
-            list_name = f'({list_name})' if self.info.has_pressed else list_name
+            list_name = f'({list_name})' if self.has_pressed else list_name
             return f'{list_name}[int({index})-1]'
 
     def add(self, meta, args):
@@ -3265,7 +3215,7 @@ class ConvertToPython_12(ConvertToPython_11):
 
         body_start = 2 if has_args else 1
         lines = args[body_start:]
-        if self.info.has_pressed:
+        if self.has_pressed:
             init_value = 'dict()'
             if has_args:
                 init_value = f'''{{{', '.join(f'"{str(x)}": {str(x)}' for x in args[1].children)}}}'''
@@ -3684,7 +3634,7 @@ def _restore_parser_from_file_if_present(pickle_file):
     if os.path.isfile(full_path):
         try:
             with open(full_path, "rb") as fp:
-                lark: Lark = pickle.load(fp)
+                lark = pickle.load(fp)
             # Restore the unpickle-able bits.
             # Keep this in sync with the save method!
             lark.parser.parser.lexer_conf.re_module = regex
@@ -3700,7 +3650,7 @@ def _restore_parser_from_file_if_present(pickle_file):
     return None
 
 
-@ft.lru_cache(maxsize=0 if is_production() else 100)
+@lru_cache(maxsize=0 if is_production() else 100)
 def get_parser(level, lang="en", keep_all_tokens=False, skip_faulty=False):
     """Return the Lark parser for a given level.
     Parser generation takes about 0.5 seconds depending on the level so
@@ -3743,6 +3693,11 @@ def get_parser(level, lang="en", keep_all_tokens=False, skip_faulty=False):
             _save_parser_to_file(parser, cached_parser_file)
 
     return parser
+
+
+ParseResult = namedtuple('ParseResult', ['code', 'source_map', 'has_turtle',
+                                         'has_pressed', 'has_clear', 'has_music', 'has_sleep', 'commands',
+                                         'roles_of_variables'])
 
 
 def transpile_inner_with_skipping_faulty(input_string, level, lang="en", unused_allowed=True):
@@ -3792,7 +3747,7 @@ def transpile_inner_with_skipping_faulty(input_string, level, lang="en", unused_
     return transpile_result
 
 
-def transpile(input_string: str, level: int, lang="en", skip_faulty=True, is_debug=False, unused_allowed=False, microbit=False):
+def transpile(input_string, level, lang="en", skip_faulty=True, is_debug=False, unused_allowed=False, microbit=False):
     """
     Function that transpiles the Hedy code to Python
 
@@ -4124,7 +4079,7 @@ def check_program_size_is_valid(input_string):
         raise exceptions.InputTooBigException(lines_of_code=number_of_lines, max_lines=MAX_LINES)
 
 
-def process_input_string(input_string: str, level: int, lang: str, preprocess_ifs_enabled=True):
+def process_input_string(input_string, level, lang, preprocess_ifs_enabled=True):
     result = input_string.replace('\r\n', '\n')
 
     location = location_of_first_blank(result)
@@ -4149,9 +4104,7 @@ def parse_input(input_string, level, lang):
     parser = get_parser(level, lang, skip_faulty=source_map.skip_faulty)
     try:
         parse_result = parser.parse(input_string + '\n')
-        ret = parse_result.children[0]  # getting rid of the root could also be done in the transformer would be nicer
-        assert isinstance(ret, lark.Tree)
-        return ret
+        return parse_result.children[0]  # getting rid of the root could also be done in the transformer would be nicer
     except lark.UnexpectedEOF:
         lines = input_string.split('\n')
         last_line = len(lines)
@@ -4218,15 +4171,6 @@ def create_lookup_table(abstract_syntax_tree, level, lang, input_string, has_pre
     return lookup_table
 
 
-def repr_tree(branch: lark.tree.Branch[lark.Token]):
-    if not (isinstance(branch, lark.Tree) and branch.children):
-        return repr(branch)
-
-    repr_children = ''.join(repr_tree(t) + ',\n' for t in branch.children)
-    indented_children = textwrap.indent(repr_children, '    ')
-    return f"Tree({branch.data!r}, [\n{indented_children}])"
-
-
 def create_AST(input_string, level, lang="en"):
     program_root = parse_input(input_string, level, lang)
 
@@ -4249,7 +4193,7 @@ def create_AST(input_string, level, lang="en"):
 
 def determine_roles(lookup, input_string, level, lang):
     all_vars = all_variables(input_string, level, lang)
-    roles_dictionary: dict[str, Role] = {}
+    roles_dictionary = {}
     for var in all_vars:
         assignments = [x for x in lookup.get_all() if x.name == var]
 
@@ -4270,7 +4214,7 @@ def determine_roles(lookup, input_string, level, lang):
     return roles_dictionary
 
 
-def transpile_inner(input_string: str, level: int, lang="en", populate_source_map=False, is_debug=False, unused_allowed=False,
+def transpile_inner(input_string, level, lang="en", populate_source_map=False, is_debug=False, unused_allowed=False,
                     microbit=False):
     check_program_size_is_valid(input_string)
     input_string = process_input_string(input_string, level, lang)
@@ -4287,15 +4231,21 @@ def transpile_inner(input_string: str, level: int, lang="en", populate_source_ma
 
     try:
         abstract_syntax_tree, lookup_table, commands = create_AST(input_string, level, lang)
-        log['ast'].debug(repr_tree(abstract_syntax_tree))
 
-        roles_of_variables = determine_roles(lookup_table, input_string, level, lang)
-        info = AstInfo(source_map, commands, roles_of_variables)
+        has_clear = "clear" in commands
+        has_turtle = "forward" in commands or "turn" in commands or "color" in commands
+        has_pressed = "if_pressed" in commands or "if_pressed_else" in commands
+        has_music = "play" in commands
+        has_sleep = "sleep" in commands
 
         # grab the right transpiler from the lookup
         convertToPython = MICROBIT_TRANSPILER_LOOKUP[level] if microbit else TRANSPILER_LOOKUP[level]
-        python = convertToPython(lookup_table, info, lang, is_debug).transform(abstract_syntax_tree)
-        parse_result = ParseResult.build(python, info)
+        python = convertToPython(lookup_table, lang, is_debug, has_pressed).transform(abstract_syntax_tree)
+
+        roles_of_variables = determine_roles(lookup_table, input_string, level, lang)
+
+        parse_result = ParseResult(python, source_map, has_turtle, has_pressed,
+                                   has_clear, has_music, has_sleep, commands, roles_of_variables)
 
         if populate_source_map:
             source_map.set_python_output(python)
@@ -4316,3 +4266,15 @@ def transpile_inner(input_string: str, level: int, lang="en", populate_source_ma
                 raise E.orig_exc
             else:
                 raise E
+
+
+def execute(input_string, level):
+    python = transpile(input_string, level)
+    if python.has_turtle:
+        raise exceptions.HedyException("hedy.execute doesn't support turtle")
+    exec(python.code)
+
+
+def transpile_and_return_python(input_string, level):
+    python = transpile(input_string, level, microbit=True)
+    return str(python.code)
