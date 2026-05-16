@@ -1,5 +1,5 @@
 'False': Khalad
-'True': Jira
+'True': Sax
 add: kudar
 and: iyo
 ask: waydii
@@ -25,9 +25,9 @@ def: qx
 define: qeex
 echo: dheh
 elif: haddii kale
-else: kale
+else: haddii kalana
 'false': khalad
-for: marka
+for: mid walba
 forward: soco
 from: ka
 gray: dameeri
@@ -40,7 +40,7 @@ left: bidix
 length: dherer
 not_in: ku jirin
 or: ama
-orange: liin
+orange: lfaanto
 pink: basali
 play: ciyaar
 pressed: gujiyay
