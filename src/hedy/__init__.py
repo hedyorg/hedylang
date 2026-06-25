@@ -1906,10 +1906,13 @@ class ConvertToPython_1(ConvertToPython):
         return f"answer = input(f'{argument}'){self.add_debug_breakpoint()}"
 
     def interpolate_answer(self, argument) -> str:
+        # We're generating a Python f-string below; escape any user-provided braces to avoid
+        # accidental expression evaluation / syntax errors.
+        argument = argument.replace('{', '{{').replace('}', '}}')
         local_answer_keyword = hedy_translation.translate_keyword_from_en('answer', self.language)
         keywords = [local_answer_keyword, 'answer']
         pattern = whole_token_pattern(keywords)
-        return pattern.sub(lambda m: f'{{globals().get("answer") or "{m.group(0)}"}}', argument)
+        return pattern.sub(lambda m: f'{{globals().get("answer", "{m.group(0)}")}}', argument)
 
     def echo(self, meta, args):  # todo: keep for backwards compatibility, maybe remove later?
         if not args:
