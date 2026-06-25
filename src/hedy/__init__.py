@@ -1568,6 +1568,17 @@ def find_unquoted_segments(s):
     return result
 
 
+def whole_token_pattern(keywords):
+    """Build a regex pattern that matches any keyword as a whole token.
+
+    A token character is a Unicode letter/number or underscore.
+    """
+    unique_keywords = list(dict.fromkeys(keywords))
+    return regex.compile(
+        r'(?<![\p{L}\p{N}_])(?:' + '|'.join(regex.escape(k) for k in unique_keywords) + r')(?![\p{L}\p{N}_])'
+    )
+
+
 def get_allowed_types(command, level):
     # get only the allowed types of the command for all levels before the requested level
     allowed = [values for key, values in commands_and_types_per_level[command].items() if key <= level]
@@ -1895,10 +1906,10 @@ class ConvertToPython_1(ConvertToPython):
         return f"answer = input(f'{argument}'){self.add_debug_breakpoint()}"
 
     def interpolate_answer(self, argument) -> str:
-        answer_keyword = hedy_translation.translate_keyword_from_en('answer', self.language)
-        if answer_keyword in argument:
-            argument = argument.replace(answer_keyword, f'{{globals().get("answer") or "{answer_keyword}"}}')
-        return argument
+        local_answer_keyword = hedy_translation.translate_keyword_from_en('answer', self.language)
+        keywords = [local_answer_keyword, 'answer']
+        pattern = whole_token_pattern(keywords)
+        return pattern.sub(lambda m: f'{{globals().get("answer") or "{m.group(0)}"}}', argument)
 
     def echo(self, meta, args):  # todo: keep for backwards compatibility, maybe remove later?
         if not args:

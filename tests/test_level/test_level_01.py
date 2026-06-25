@@ -407,6 +407,35 @@ class TestsLevel1(HedyTester):
             lang='nl'
         )
 
+    def test_print_english_answer_keyword_in_nl_without_ask_prints_literal(self):
+        code = "print answer"
+        expected = "print(f'{globals().get(\"answer\") or \"answer\"}')"
+
+        self.single_level_tester(
+            code=code,
+            expected=expected,
+            output='answer',
+            expected_commands=[Command.print],
+            lang='nl',
+            translate=False
+        )
+
+    def test_print_mixed_english_and_localized_answer_keywords_in_nl(self):
+        code = "print answer antwoord"
+        expected = (
+            "print(f'{globals().get(\"answer\") or \"answer\"} "
+            "{globals().get(\"answer\") or \"antwoord\"}')"
+        )
+
+        self.single_level_tester(
+            code=code,
+            expected=expected,
+            output='answer antwoord',
+            expected_commands=[Command.print],
+            lang='nl',
+            translate=False
+        )
+
     def test_ask_without_print_transpiles_to_single_ask_command(self):
         code = "ask What is your favorite color?"
         expected = "answer = input(f'What is your favorite color?')"
