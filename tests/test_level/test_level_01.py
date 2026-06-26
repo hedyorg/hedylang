@@ -275,7 +275,7 @@ class TestsLevel1(HedyTester):
 
     def test_ask_with_answer_keyword_uses_globals_lookup(self):
         code = "ask answer"
-        expected = "answer = input(f'{globals().get(\"answer\") or \"answer\"}')"
+        expected = "answer = input(f'{globals().get(\"answer\", \"answer\")}')"
 
         self.single_level_tester(code=code, expected=expected)
 
@@ -386,7 +386,7 @@ class TestsLevel1(HedyTester):
 
     def test_print_answer_keyword_without_ask_prints_literal(self):
         code = "print answer"
-        expected = "print(f'{globals().get(\"answer\") or \"answer\"}')"
+        expected = "print(f'{globals().get(\"answer\", \"answer\")}')"
 
         self.single_level_tester(
             code=code,
@@ -397,7 +397,7 @@ class TestsLevel1(HedyTester):
 
     def test_print_localized_answer_keyword_without_ask_prints_literal(self):
         code = "print antwoord"
-        expected = "print(f'{globals().get(\"answer\") or \"antwoord\"}')"
+        expected = "print(f'{globals().get(\"answer\", \"antwoord\")}')"
 
         self.single_level_tester(
             code=code,
@@ -409,7 +409,7 @@ class TestsLevel1(HedyTester):
 
     def test_print_english_answer_keyword_in_nl_without_ask_prints_literal(self):
         code = "print answer"
-        expected = "print(f'{globals().get(\"answer\") or \"answer\"}')"
+        expected = "print(f'{globals().get(\"answer\", \"answer\")}')"
 
         self.single_level_tester(
             code=code,
@@ -423,8 +423,8 @@ class TestsLevel1(HedyTester):
     def test_print_mixed_english_and_localized_answer_keywords_in_nl(self):
         code = "print answer antwoord"
         expected = (
-            "print(f'{globals().get(\"answer\") or \"answer\"} "
-            "{globals().get(\"answer\") or \"antwoord\"}')"
+            "print(f'{globals().get(\"answer\", \"answer\")} "
+            "{globals().get(\"answer\", \"antwoord\")}')"
         )
 
         self.single_level_tester(
@@ -453,7 +453,7 @@ class TestsLevel1(HedyTester):
 
         expected = textwrap.dedent("""\
         answer = input(f'Name?')
-        print(f'{globals().get("answer") or "answer"}')""")
+        print(f'{globals().get("answer", "answer")}')""")
 
         self.single_level_tester(
             code=code,
