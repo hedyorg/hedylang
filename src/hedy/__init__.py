@@ -1914,8 +1914,8 @@ class ConvertToPython_1(ConvertToPython):
 
     def forward(self, meta, args):
         if not args:
-            return add_sleep_to_command(f't.forward(50){self.add_debug_breakpoint()}',
-                                        indent=False, is_debug=self.is_debug, location="after")
+            return add_sleep_to_command(f't.forward(0){self.add_debug_breakpoint()}',
+                                        indent=False, is_debug=self.is_debug, location="after") # no arguments defaults no movement
         return self.make_forward(int(self.unpack(args[0])))
 
     def color(self, meta, args):
@@ -1933,7 +1933,7 @@ class ConvertToPython_1(ConvertToPython):
 
     def turn(self, meta, args):
         if not args:
-            return f"t.right(90){self.add_debug_breakpoint()}"  # no arguments defaults to a right turn
+            return f"t.right(0){self.add_debug_breakpoint()}"  # no arguments defaults no turning
 
         arg = args[0].data
         if arg == 'left':
@@ -2052,7 +2052,7 @@ class ConvertToPython_2(ConvertToPython_1):
 
     def turn(self, meta, args):
         if not args:
-            return f"t.right(90){self.add_debug_breakpoint()}"  # no arguments defaults to a right turn
+            return f"t.right(0){self.add_debug_breakpoint()}"  # no arguments defaults no turning
         arg = self.unpack(args[0])
         if self.is_variable(arg, meta.line) and not self.is_list_access(arg):
             return self.make_turn(escape_var(arg))
@@ -2061,8 +2061,8 @@ class ConvertToPython_2(ConvertToPython_1):
 
     def forward(self, meta, args):
         if not args:
-            return add_sleep_to_command(f't.forward(50){self.add_debug_breakpoint()}',
-                                        indent=False, is_debug=self.is_debug, location="after")
+            return add_sleep_to_command(f't.forward(0){self.add_debug_breakpoint()}',
+                                        indent=False, is_debug=self.is_debug, location="after") # no arguments defaults no movement
         arg = self.unpack(args[0])
         if not self.is_variable(arg, meta.line) and not self.is_list_access(arg):
             arg = int(arg)  # if not a variable, then the arg is an int
@@ -2404,7 +2404,7 @@ class ConvertToPython_5(ConvertToPython_4):
 class ConvertToPython_6(ConvertToPython_5):
     def turn(self, meta, args):
         if not args:
-            return "t.right(90)" + self.add_debug_breakpoint()  # no arguments defaults to a right turn
+            return "t.right(0)" + self.add_debug_breakpoint()  # no arguments defaults no turning
         arg = args[0]
         if self.is_variable_with_definition(arg, meta.line):
             value = f'{escape_var(self.unpack(arg))}.data'
@@ -2414,8 +2414,8 @@ class ConvertToPython_6(ConvertToPython_5):
 
     def forward(self, meta, args):
         if not args:
-            return add_sleep_to_command('t.forward(50)' + self.add_debug_breakpoint(), indent=False,
-                                        is_debug=self.is_debug, location="after")
+            return add_sleep_to_command('t.forward(0)' + self.add_debug_breakpoint(), indent=False,
+                                        is_debug=self.is_debug, location="after") # no arguments defaults no movement
         arg = args[0]
         if self.is_variable_with_definition(arg, meta.line):
             value = f'{escape_var(self.unpack(arg))}.data'
@@ -3006,7 +3006,7 @@ class ConvertToPython_12(ConvertToPython_11):
 
     def turn(self, meta, args):
         if not args:
-            return "t.right(90)" + self.add_debug_breakpoint()  # no arguments defaults to a right turn
+            return "t.right(0)" + self.add_debug_breakpoint()  # no arguments defaults no turning
 
         if self.is_variable_with_definition(args[0], meta.line):
             return self.make_turn(f'{escape_var(self.unpack(args[0]))}.data')
@@ -3016,8 +3016,8 @@ class ConvertToPython_12(ConvertToPython_11):
 
     def forward(self, meta, args):
         if not args:
-            command = f't.forward(50){self.add_debug_breakpoint()}'
-            return add_sleep_to_command(command, False, self.is_debug)
+            command = f't.forward(0){self.add_debug_breakpoint()}'
+            return add_sleep_to_command(command, False, self.is_debug) # no arguments defaults no movement
 
         if self.is_variable_with_definition(args[0], meta.line):
             return self.make_forward(f'{escape_var(self.unpack(args[0]))}.data')
