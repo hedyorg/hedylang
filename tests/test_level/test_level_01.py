@@ -593,7 +593,7 @@ class TestsLevel1(HedyTester):
     def test_forward_without_argument(self):
         code = 'forward'
         expected = textwrap.dedent("""\
-        t.forward(50)
+        t.forward(0)
         time.sleep(0.1)""")
 
         self.multi_level_tester(
@@ -618,9 +618,9 @@ class TestsLevel1(HedyTester):
         forward
         forward""")
         expected = textwrap.dedent("""\
-        t.forward(50)
+        t.forward(0)
         time.sleep(0.1)
-        t.forward(50)
+        t.forward(0)
         time.sleep(0.1)""")
 
         self.multi_level_tester(
@@ -667,7 +667,7 @@ class TestsLevel1(HedyTester):
     #
     def test_turn_no_args(self):
         code = "turn"
-        expected = "t.right(90)"
+        expected = "t.right(0)"
 
         self.multi_level_tester(
             code=code,
@@ -789,7 +789,7 @@ class TestsLevel1(HedyTester):
 
         expected = self.dedent(
             self.forward_transpiled(50),
-            't.right(90)',
+            't.right(0)',
             self.forward_transpiled(100))
 
         self.multi_level_tester(
