@@ -474,6 +474,7 @@ class TestsLevel1(HedyTester):
                     'answer_interpolation': {
                         'production': False,
                         'local': True,
+                        'alpha': True,
                     }
                 },
             })
