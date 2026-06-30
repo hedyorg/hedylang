@@ -22,6 +22,7 @@ from . import exceptions
 from . import translation as hedy_translation
 from . import grammar as hedy_grammar
 from . import error as hedy_error
+from .external import is_feature_enabled
 import textwrap
 
 import lark
@@ -1909,6 +1910,8 @@ class ConvertToPython_1(ConvertToPython):
         # We're generating a Python f-string below; escape any user-provided braces to avoid
         # accidental expression evaluation / syntax errors.
         argument = argument.replace('{', '{{').replace('}', '}}')
+        if not is_feature_enabled('answer_interpolation', default=True):
+            return argument
         local_answer_keyword = hedy_translation.translate_keyword_from_en('answer', self.language)
         keywords = [local_answer_keyword, 'answer']
         pattern = whole_token_pattern(keywords)
