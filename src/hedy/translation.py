@@ -104,6 +104,39 @@ def make_keyword_string_with_whitespace(matched_substring: str, new_keyword: str
     return MATCH_EDGE_WHITESPACE.sub(f'\\1{new_keyword}\\2', matched_substring)
 
 
+def _translate_level_1_answer_keyword_in_text(lines, rules, keyword_dict_from, keyword_dict_to):
+    """Translate standalone answer keyword only inside level-1 ask/print text.
+
+    This keeps the grammar unchanged and avoids touching non-text locations.
+    """
+    target_answer_keyword = get_target_keyword(keyword_dict_to, 'answer')
+    if not target_answer_keyword:
+        return
+
+    source_answer_keywords = keyword_dict_from.get('answer', []) + ['answer']
+    source_answer_keywords = list(dict.fromkeys(source_answer_keywords))
+    if not source_answer_keywords:
+        return
+
+    answer_pattern = re.compile(
+        r'(?<!\w)(?:' + '|'.join(re.escape(k) for k in source_answer_keywords) + r')(?!\w)'
+    )
+
+    for rule in rules:
+        if rule.keyword not in {'ask', 'print'}:
+            continue
+
+        line0 = rule.line - 1
+        text_start = rule.end + 1
+        if line0 < 0 or line0 >= len(lines) or text_start >= len(lines[line0]):
+            continue
+
+        line = lines[line0]
+        text = line[text_start:]
+        translated_text = answer_pattern.sub(target_answer_keyword, text)
+        lines[line0] = line[:text_start] + translated_text
+
+
 def translate_keywords(input_string, from_lang="en", to_lang="nl", level=1):
     """ "Return code with keywords translated to language of choice in level of choice"""
 
@@ -135,6 +168,9 @@ def translate_keywords(input_string, from_lang="en", to_lang="nl", level=1):
         substitutions = defaultdict(list)
 
         lines = processed_input.splitlines()
+        if level == 1:
+            _translate_level_1_answer_keyword_in_text(lines, translator.rules, keyword_dict_from, keyword_dict_to)
+
         for rule in translator.rules:
             if rule.keyword in keyword_dict_from and rule.keyword in keyword_dict_to:
                 # Sometimes the rule matches just a keyword, sometimes it matches a keyword
