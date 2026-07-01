@@ -1,10 +1,14 @@
-"""Functions that can be configured by the user of this library, such as the gettext function for translation."""
+"""External configuration hooks exposed by hedylang integrations."""
 
-import copy
+from __future__ import annotations
+
+from copy import deepcopy
+
+
+FRONTEND_ENVIRONMENT = None
+FEATURE_FLAGS = {}
 
 THE_GETTEXT = lambda x: x
-THE_FRONTEND_ENVIRONMENT = 'local'
-THE_FEATURE_FLAGS = {}
 
 def initialize_gettext(gettext_fn):
     """Initialize the gettext function used for translation in this module."""
@@ -18,31 +22,15 @@ def gettext(s):
 
 
 def initialize_frontend_feature_flags(frontend_environment=None, feature_flags=None):
-    """Initialize frontend feature-flag settings provided by the parent application.
-
-    Expected format matches the Hedy parent project context processor:
-    {
-        "frontend_environment": "local",
-        "feature_flags": {
-            "answer_interpolation": {
-                "production": False,
-                "local": True,
-                "alpha": True,
-            }
-        },
-    }
-    """
-    global THE_FRONTEND_ENVIRONMENT
-    global THE_FEATURE_FLAGS
-
-    if frontend_environment is not None:
-        THE_FRONTEND_ENVIRONMENT = frontend_environment
-    if feature_flags is not None:
-        THE_FEATURE_FLAGS = feature_flags
+    """Initialize frontend environment and feature flags for this process."""
+    global FRONTEND_ENVIRONMENT, FEATURE_FLAGS
+    FRONTEND_ENVIRONMENT = frontend_environment
+    FEATURE_FLAGS = feature_flags if isinstance(feature_flags, dict) else {}
 
 
 def initialize_frontend_feature_flags_from_context(context):
-    """Initialize feature flags from a context object with environment and flags."""
+    """Initialize feature flags from a context dict provided by the parent project."""
+    context = context if isinstance(context, dict) else {}
     initialize_frontend_feature_flags(
         frontend_environment=context.get('frontend_environment'),
         feature_flags=context.get('feature_flags'),
@@ -50,22 +38,26 @@ def initialize_frontend_feature_flags_from_context(context):
 
 
 def get_frontend_feature_flags_context():
-    """Return the current feature-flag context for save/restore in tests or integrations."""
+    """Return current frontend environment and feature flags context."""
     return {
-        'frontend_environment': THE_FRONTEND_ENVIRONMENT,
-        'feature_flags': copy.deepcopy(THE_FEATURE_FLAGS),
+        'frontend_environment': FRONTEND_ENVIRONMENT,
+        'feature_flags': deepcopy(FEATURE_FLAGS),
     }
 
 
 def is_feature_enabled(feature_name, default=True):
-    """Resolve a feature flag against the configured frontend environment."""
-    feature_config = THE_FEATURE_FLAGS.get(feature_name)
-    if feature_config is None:
+    """Check if a feature is enabled for the current frontend environment."""
+    feature_definition = FEATURE_FLAGS.get(feature_name)
+
+    if feature_definition is None:
         return default
 
-    if isinstance(feature_config, dict):
-        if THE_FRONTEND_ENVIRONMENT in feature_config:
-            return bool(feature_config[THE_FRONTEND_ENVIRONMENT])
-        return default
+    if isinstance(feature_definition, bool):
+        return feature_definition
 
-    return bool(feature_config)
+    if isinstance(feature_definition, dict):
+        if FRONTEND_ENVIRONMENT is None:
+            return default
+        return feature_definition.get(FRONTEND_ENVIRONMENT, default)
+
+    return default

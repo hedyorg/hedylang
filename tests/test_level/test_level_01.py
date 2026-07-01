@@ -1,7 +1,7 @@
 import textwrap
 import hedy
 from hedy import Command
-from hedy.external import initialize_frontend_feature_flags_from_context, get_frontend_feature_flags_context
+from hedy.external import get_frontend_feature_flags_context, initialize_frontend_feature_flags_from_context
 from hedy.sourcemap import SourceRange
 from ..Tester import HedyTester, SkippedMapping
 
@@ -462,28 +462,53 @@ class TestsLevel1(HedyTester):
             expected_commands=[Command.ask, Command.print]
         )
 
-    def test_print_answer_keyword_feature_flag_disabled_keeps_literal_text(self):
-        previous_context = get_frontend_feature_flags_context()
-        initialize_frontend_feature_flags_from_context({
-            'frontend_environment': 'production',
-            'feature_flags': {
-                'answer_interpolation': {
-                    'production': False,
-                    'local': True,
-                    'alpha': True,
-                }
-            },
-        })
+    def test_print_answer_keyword_with_feature_flag_disabled(self):
+        code = "print answer"
+        expected = "print(f'answer')"
 
+        previous_context = get_frontend_feature_flags_context()
         try:
-            code = "print answer"
-            expected = "print(f'answer')"
+            initialize_frontend_feature_flags_from_context({
+                'frontend_environment': 'production',
+                'feature_flags': {
+                    'answer_interpolation': {
+                        'production': False,
+                        'local': True,
+                        'alpha': True,
+                    }
+                },
+            })
 
             self.single_level_tester(
                 code=code,
                 expected=expected,
                 output='answer',
-                expected_commands=[Command.print]
+                expected_commands=[Command.print],
+            )
+        finally:
+            initialize_frontend_feature_flags_from_context(previous_context)
+
+    def test_print_answer_keyword_with_feature_flag_enabled(self):
+        code = "print answer"
+        expected = "print(f'{globals().get(\"answer\", \"answer\")}')"
+
+        previous_context = get_frontend_feature_flags_context()
+        try:
+            initialize_frontend_feature_flags_from_context({
+                'frontend_environment': 'local',
+                'feature_flags': {
+                    'answer_interpolation': {
+                        'production': False,
+                        'local': True,
+                    }
+                },
+            })
+
+            self.single_level_tester(
+                code=code,
+                expected=expected,
+                output='answer',
+                expected_commands=[Command.print],
             )
         finally:
             initialize_frontend_feature_flags_from_context(previous_context)
