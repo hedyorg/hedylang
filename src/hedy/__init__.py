@@ -22,6 +22,7 @@ from . import exceptions
 from . import translation as hedy_translation
 from . import grammar as hedy_grammar
 from . import error as hedy_error
+from .external import is_feature_enabled
 import textwrap
 
 import lark
@@ -1568,6 +1569,17 @@ def find_unquoted_segments(s):
     return result
 
 
+def whole_token_pattern(keywords):
+    """Build a regex pattern that matches any keyword as a whole token.
+
+    A token character is a Unicode letter/number or underscore.
+    """
+    unique_keywords = list(dict.fromkeys(keywords))
+    return regex.compile(
+        r'(?<![\p{L}\p{N}_])(?:' + '|'.join(regex.escape(k) for k in unique_keywords) + r')(?![\p{L}\p{N}_])'
+    )
+
+
 def get_allowed_types(command, level):
     # get only the allowed types of the command for all levels before the requested level
     allowed = [values for key, values in commands_and_types_per_level[command].items() if key <= level]
@@ -1886,13 +1898,26 @@ class ConvertToPython_1(ConvertToPython):
 
     def print(self, meta, args):
         argument = process_characters_needing_escape(self.unpack(args[0]))
-        return f"print('{argument}'){self.add_debug_breakpoint()}"
+        argument = self.interpolate_answer(argument)
+        return f"print(f'{argument}'){self.add_debug_breakpoint()}"
 
     def ask(self, meta, args):
         argument = process_characters_needing_escape(self.unpack(args[0]))
-        return f"answer = input('{argument}'){self.add_debug_breakpoint()}"
+        argument = self.interpolate_answer(argument)
+        return f"answer = input(f'{argument}'){self.add_debug_breakpoint()}"
 
-    def echo(self, meta, args):
+    def interpolate_answer(self, argument) -> str:
+        # We're generating a Python f-string below; escape any user-provided braces to avoid
+        # accidental expression evaluation / syntax errors.
+        argument = argument.replace('{', '{{').replace('}', '}}')
+        if not is_feature_enabled('answer_interpolation', default=True):
+            return argument
+        local_answer_keyword = hedy_translation.translate_keyword_from_en('answer', self.language)
+        keywords = [local_answer_keyword, 'answer']
+        pattern = whole_token_pattern(keywords)
+        return pattern.sub(lambda m: f'{{globals().get("answer", "{m.group(0)}")}}', argument)
+
+    def echo(self, meta, args):  # todo: keep for backwards compatibility, maybe remove later?
         if not args:
             return f"print(answer){self.add_debug_breakpoint()}"  # no arguments, just print answer
 
@@ -1914,8 +1939,8 @@ class ConvertToPython_1(ConvertToPython):
 
     def forward(self, meta, args):
         if not args:
-            return add_sleep_to_command(f't.forward(50){self.add_debug_breakpoint()}',
-                                        indent=False, is_debug=self.is_debug, location="after")
+            return add_sleep_to_command(f't.forward(0){self.add_debug_breakpoint()}',
+                                        indent=False, is_debug=self.is_debug, location="after") # no arguments defaults no movement
         return self.make_forward(int(self.unpack(args[0])))
 
     def color(self, meta, args):
@@ -1933,7 +1958,7 @@ class ConvertToPython_1(ConvertToPython):
 
     def turn(self, meta, args):
         if not args:
-            return f"t.right(90){self.add_debug_breakpoint()}"  # no arguments defaults to a right turn
+            return f"t.right(0){self.add_debug_breakpoint()}"  # no arguments defaults no turning
 
         arg = args[0].data
         if arg == 'left':
@@ -2052,7 +2077,7 @@ class ConvertToPython_2(ConvertToPython_1):
 
     def turn(self, meta, args):
         if not args:
-            return f"t.right(90){self.add_debug_breakpoint()}"  # no arguments defaults to a right turn
+            return f"t.right(0){self.add_debug_breakpoint()}"  # no arguments defaults no turning
         arg = self.unpack(args[0])
         if self.is_variable(arg, meta.line) and not self.is_list_access(arg):
             return self.make_turn(escape_var(arg))
@@ -2061,8 +2086,8 @@ class ConvertToPython_2(ConvertToPython_1):
 
     def forward(self, meta, args):
         if not args:
-            return add_sleep_to_command(f't.forward(50){self.add_debug_breakpoint()}',
-                                        indent=False, is_debug=self.is_debug, location="after")
+            return add_sleep_to_command(f't.forward(0){self.add_debug_breakpoint()}',
+                                        indent=False, is_debug=self.is_debug, location="after") # no arguments defaults no movement
         arg = self.unpack(args[0])
         if not self.is_variable(arg, meta.line) and not self.is_list_access(arg):
             arg = int(arg)  # if not a variable, then the arg is an int
@@ -2404,7 +2429,7 @@ class ConvertToPython_5(ConvertToPython_4):
 class ConvertToPython_6(ConvertToPython_5):
     def turn(self, meta, args):
         if not args:
-            return "t.right(90)" + self.add_debug_breakpoint()  # no arguments defaults to a right turn
+            return "t.right(0)" + self.add_debug_breakpoint()  # no arguments defaults no turning
         arg = args[0]
         if self.is_variable_with_definition(arg, meta.line):
             value = f'{escape_var(self.unpack(arg))}.data'
@@ -2414,8 +2439,8 @@ class ConvertToPython_6(ConvertToPython_5):
 
     def forward(self, meta, args):
         if not args:
-            return add_sleep_to_command('t.forward(50)' + self.add_debug_breakpoint(), indent=False,
-                                        is_debug=self.is_debug, location="after")
+            return add_sleep_to_command('t.forward(0)' + self.add_debug_breakpoint(), indent=False,
+                                        is_debug=self.is_debug, location="after") # no arguments defaults no movement
         arg = args[0]
         if self.is_variable_with_definition(arg, meta.line):
             value = f'{escape_var(self.unpack(arg))}.data'
@@ -3006,7 +3031,7 @@ class ConvertToPython_12(ConvertToPython_11):
 
     def turn(self, meta, args):
         if not args:
-            return "t.right(90)" + self.add_debug_breakpoint()  # no arguments defaults to a right turn
+            return "t.right(0)" + self.add_debug_breakpoint()  # no arguments defaults no turning
 
         if self.is_variable_with_definition(args[0], meta.line):
             return self.make_turn(f'{escape_var(self.unpack(args[0]))}.data')
@@ -3016,8 +3041,8 @@ class ConvertToPython_12(ConvertToPython_11):
 
     def forward(self, meta, args):
         if not args:
-            command = f't.forward(50){self.add_debug_breakpoint()}'
-            return add_sleep_to_command(command, False, self.is_debug)
+            command = f't.forward(0){self.add_debug_breakpoint()}'
+            return add_sleep_to_command(command, False, self.is_debug) # no arguments defaults no movement
 
         if self.is_variable_with_definition(args[0], meta.line):
             return self.make_forward(f'{escape_var(self.unpack(args[0]))}.data')

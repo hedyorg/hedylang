@@ -146,6 +146,54 @@ class TestsTranslationLevel1(HedyTester):
 
         self.assertEqual(code, result)
 
+    def test_level1_answer_keyword_in_print_text_en_to_es(self):
+        code = "print your name is answer"
+
+        result = hedy_translation.translate_keywords(code, from_lang="en", to_lang="es", level=self.level)
+        expected = "imprimir your name is respuesta"
+
+        self.assertEqual(expected, result)
+
+    def test_level1_answer_keyword_in_ask_and_print_text_en_to_es(self):
+        code = "ask what is your name\nprint your name is answer"
+
+        result = hedy_translation.translate_keywords(code, from_lang="en", to_lang="es", level=self.level)
+        expected = "preguntar what is your name\nimprimir your name is respuesta"
+
+        self.assertEqual(expected, result)
+
+    def test_level1_answer_keyword_in_print_text_nl_to_en(self):
+        code = "print jouw naam is antwoord"
+
+        result = hedy_translation.translate_keywords(code, from_lang="nl", to_lang="en", level=self.level)
+        expected = "print jouw naam is answer"
+
+        self.assertEqual(expected, result)
+
+    def test_level1_answer_keyword_mixed_english_and_localized_nl_to_es(self):
+        code = "print antwoord answer"
+
+        result = hedy_translation.translate_keywords(code, from_lang="nl", to_lang="es", level=self.level)
+        expected = "imprimir respuesta respuesta"
+
+        self.assertEqual(expected, result)
+
+    def test_level1_answer_keyword_respects_token_boundaries(self):
+        code = "print myanswer answer_answer answer answer!"
+
+        result = hedy_translation.translate_keywords(code, from_lang="en", to_lang="es", level=self.level)
+        expected = "imprimir myanswer answer_answer respuesta respuesta!"
+
+        self.assertEqual(expected, result)
+
+    def test_level1_answer_keyword_only_in_ask_print_text(self):
+        code = "forward answer\nprint answer"
+
+        result = hedy_translation.translate_keywords(code, from_lang="en", to_lang="nl", level=self.level)
+        expected = "vooruit answer\nprint antwoord"
+
+        self.assertEqual(expected, result)
+
     # No translation because of the invalid space error
 
     def test_invalid_space(self):
