@@ -1,13 +1,13 @@
 'False': 'False'
 'True': 'True'
-add: додати
+add: додати|додай
 and: і
-ask: запитати
-at: обрати
+ask: запитати|запитай
+at: обрати|на позиції
 black: чорний
 blue: синій
 brown: коричневий
-call: викликати
+call: викликати|виклик
 clear: очистити
 color: колір
 comma: ','
@@ -21,7 +21,7 @@ d6: '6'
 d7: '7'
 d8: '8'
 d9: '9'
-def: функція
+def: функція|зах
 define: визначити
 echo: ехо
 elif: інакше якщо
@@ -29,13 +29,13 @@ else: інакше
 'false': 'false'
 for: для
 forward: вперед
-from: із
+from: із|iз|з
 gray: сірий
 green: зелений
 if: якщо
 in: в
-input: ввести
-is: чи
+input: ввести|введи
+is: чи|це
 left: вліво
 length: довжина
 not_in: не в
@@ -43,24 +43,24 @@ or: або
 orange: оранжевий
 pink: рожевий
 play: грати
-pressed: натиснута
-print: надрукувати
+pressed: натиснута|натиснув
+print: надрукувати|друкуй
 purple: фіолетовий
 quote: "'"
-random: навмання
-range: діапазоні
+random: навмання|випадковий|випадковій
+range: діапазоні|діапазон|діапазонi
 red: червоний
-remove: вилучити
-repeat: повторити
+remove: вилучити|видали
+repeat: повторити|повтори
 return: повернути
 right: вправо
-sleep: почекати
+sleep: почекати|почекай
 step: крок
-times: разів
+times: разів|рази|раз
 to: до
 to_list: до
 'true': 'true'
-turn: повернути
+turn: поверни
 while: тоді як
 white: білий
 with: з
