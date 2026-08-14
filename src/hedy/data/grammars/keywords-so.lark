@@ -16,7 +16,7 @@ blue: ("buluug" | "blue") _SPACE?
 brown: ("maariin" | "brown") _SPACE?
 gray: ("dameeri" | "gray") _SPACE?
 green: ("cagaar" | "green") _SPACE?
-orange: ("liin" | "orange") _SPACE?
+orange: ("lfaanto" | "liin" | "orange") _SPACE?
 pink: ("basali" | "pink") _SPACE?
 purple: ("soosali" | "purple") _SPACE?
 red: ("guduud" | "red") _SPACE?
@@ -34,11 +34,11 @@ random: ("xul" | "random") _SPACE?
 _IN: _SPACE ("kamid" | "in") _SPACE
 _NOT_IN: _SPACE ("ku jirin" | "not in") _SPACE
 _IF: ("haddii" | "if") _SPACE
-_ELSE: "kale" | "else"
+_ELSE: "haddii kalana" | "kale" | "else"
 _AND: _SPACE? ("iyo" | "and") _SPACE
 _REPEAT: ("kuceli" | "repeat") _SPACE
 _TIMES: _SPACE ("jeer" | "times")
-_FOR: ("marka" | "for") _SPACE
+_FOR: ("mid walba" | "marka" | "for") _SPACE
 _RANGE: ("baaxad" | "range") _SPACE?
 _TO: _SPACE ("ilaa" | "to") _SPACE
 _STEP: "tallaabo" | "step"
@@ -50,5 +50,5 @@ _LENGTH: "dherer" | "length"
 _COLOR : ("midab" | "color") _SPACE?
 _PRESSED: ("gujiyay" | "pressed") _SPACE?
 clear: ("masax" | "clear") _SPACE?
-TRUE: ("sax" | "Jira" | "true" | "True") _SPACE?
+TRUE: ("sax" | "Sax" | "Jira" | "true" | "True") _SPACE?
 FALSE: ("khalad" | "Khalad" | "false" | "False") _SPACE?
