@@ -617,7 +617,7 @@ class TestsLevel7(HedyTester):
             max_level=11,
             code=code,
             lang=lang,
-            translate=False,
+            translate=[],
             expected=expected
         )
 
@@ -801,7 +801,7 @@ class TestsLevel7(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected,
             max_level=11
         )
@@ -846,7 +846,7 @@ class TestsLevel7(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
@@ -864,7 +864,7 @@ class TestsLevel7(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
@@ -1039,7 +1039,7 @@ class TestsLevel7(HedyTester):
             lang='ar',
             unused_allowed=True,
             # translation must be off because the Latin commas will be converted to arabic commas and this is correct
-            translate=False
+            translate=[]
         )
 
     def test_assign_list_with_arabic_comma_and_is(self):
@@ -1332,7 +1332,7 @@ class TestsLevel7(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected,
             max_level=11
         )
@@ -2138,7 +2138,7 @@ class TestsLevel7(HedyTester):
             code=code,
             expected=expected,
             output=output,
-            translate=False)
+            translate=[])
 
     @parameterized.expand(HedyTester.arithmetic_operations_but_addition)
     def test_calc_with_text_var_gives_type_error(self, operation):
@@ -2349,7 +2349,7 @@ class TestsLevel7(HedyTester):
         drink = Value('water')
         print(f'{drink}')""")
 
-        self.multi_level_tester(max_level=7, code=code, expected=expected, translate=False, unused_allowed=True)
+        self.multi_level_tester(max_level=7, code=code, expected=expected, translate=[], unused_allowed=True)
 
     def test_consecutive_if_else_statements(self):
         code = textwrap.dedent("""\

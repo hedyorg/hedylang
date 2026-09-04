@@ -407,7 +407,7 @@ class TestsLevel8(HedyTester):
             code=code,
             expected=expected,
             skip_faulty=False,
-            translate=False)
+            translate=[])
 
     def test_repeat_if_pressed_multiple(self):
         code = textwrap.dedent("""\
@@ -455,7 +455,7 @@ class TestsLevel8(HedyTester):
         self.single_level_tester(
             code=code,
             expected=expected,
-            translate=False)
+            translate=[])
 
     def test_repeat_if_multiple(self):
         # when migrating I had to remove code related to conversion
@@ -542,7 +542,7 @@ class TestsLevel8(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
@@ -562,7 +562,7 @@ class TestsLevel8(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
