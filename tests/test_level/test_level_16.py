@@ -5,7 +5,7 @@ from parameterized import parameterized
 from hedy import exceptions
 import hedy
 from hedy.sourcemap import SourceRange
-from ..Tester import HedyTester, SkippedMapping
+from ..Tester import HedyTester, SkippedMapping, VERIFY_TRANSLATION_LANGS
 
 
 def missing_colon_check(command, line_number):
@@ -945,7 +945,7 @@ class TestsLevel16(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
@@ -965,7 +965,9 @@ class TestsLevel16(HedyTester):
         self.multi_level_tester(
             code=code,
             expected=expected,
-            unused_allowed=True
+            unused_allowed=True,
+            # Arabic has one keyword for both True and true, so the round trip loses the case
+            translate=[lang for lang in VERIFY_TRANSLATION_LANGS if lang != 'ar']
         )
 
     @parameterized.expand([('True', True, 'True', 'False'), ('true', True, 'true', 'false')])
@@ -982,7 +984,7 @@ class TestsLevel16(HedyTester):
         self.single_level_tester(
             code=code,
             expected=expected,
-            translate=False
+            translate=[]
         )
 
     def test_if_else_boolean(self):
@@ -1173,7 +1175,9 @@ class TestsLevel16(HedyTester):
         self.multi_level_tester(
             code=code,
             expected=expected,
-            skip_faulty=False
+            skip_faulty=False,
+            # Arabic has one keyword for both True and true, so the round trip loses the case
+            translate=[lang for lang in VERIFY_TRANSLATION_LANGS if lang != 'ar']
         )
 
     def test_allow_space_before_colon(self):
@@ -1610,7 +1614,7 @@ class TestsLevel16(HedyTester):
             max_level=20,
             code=code,
             expected=expected,
-            translate=False,
+            translate=[],
             extra_check_function=self.is_not_turtle()
         )
 
@@ -1690,7 +1694,7 @@ class TestsLevel16(HedyTester):
         self.multi_level_tester(
             code=code,
             expected=expected,
-            translate=False,
+            translate=[],
             expected_commands=['input', 'if', 'print', 'print', 'print', 'print'],
             extra_check_function=self.is_not_turtle()
         )
