@@ -301,7 +301,7 @@ class TestsLevel5(HedyTester):
           result = 'b'
         print(f'{result}')""")
 
-        self.single_level_tester(code=code, expected=expected, lang='da', output='0', translate=False)
+        self.single_level_tester(code=code, expected=expected, lang='da', output='0', translate=[])
 
     @parameterized.expand(['иначе', 'sinon'])
     def test_if_assign_danish(self, else_):
@@ -320,7 +320,7 @@ class TestsLevel5(HedyTester):
           x__x__x__x = '5'
         print(f'{{result}}')""")
 
-        self.single_level_tester(code=code, expected=expected, lang='da', translate=False,
+        self.single_level_tester(code=code, expected=expected, lang='da', translate=[],
                                  output=f'num {else_} result is b')
 
     def test_if_equality_print_else_print(self):
@@ -458,7 +458,7 @@ class TestsLevel5(HedyTester):
           x__x__x__x = '5'
         drink = 'water'""")
 
-        self.single_level_tester(code=code, expected=expected, translate=False, unused_allowed=True)
+        self.single_level_tester(code=code, expected=expected, translate=[], unused_allowed=True)
 
     def test_two_ifs_assign_following(self):
         code = textwrap.dedent("""\
@@ -474,7 +474,7 @@ class TestsLevel5(HedyTester):
         drink = 'water'
         print(f'{drink}')""")
 
-        self.single_level_tester(code=code, expected=expected, translate=False, unused_allowed=True)
+        self.single_level_tester(code=code, expected=expected, translate=[], unused_allowed=True)
 
     def test_if_equality_print_else_linebreak_print(self):
         # line break after else is allowed
@@ -675,7 +675,7 @@ class TestsLevel5(HedyTester):
           x__x__x__x = '5'
         print(f'{eten}')""")
 
-        self.single_level_tester(code=code, expected=expected, translate=False, unused_allowed=True)
+        self.single_level_tester(code=code, expected=expected, translate=[], unused_allowed=True)
 
     def test_onno_3372_else(self):
         code = textwrap.dedent("""\
@@ -893,7 +893,7 @@ class TestsLevel5(HedyTester):
             code=code,
             lang='nl',
             expected=expected,
-            translate=False
+            translate=[]
         )
 
     #

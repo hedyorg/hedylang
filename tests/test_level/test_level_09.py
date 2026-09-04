@@ -672,7 +672,7 @@ class TestsLevel9(HedyTester):
         else:
           print(f'pizza is better')""")
 
-        self.multi_level_tester(code=code, expected=expected, max_level=11, translate=False)
+        self.multi_level_tester(code=code, expected=expected, max_level=11, translate=[])
 
     def test_if_empty_middle_line_with_whitespace_else_print(self):
         code = textwrap.dedent("""\
@@ -1650,7 +1650,7 @@ class TestsLevel9(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
@@ -1672,7 +1672,7 @@ class TestsLevel9(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
@@ -1697,7 +1697,7 @@ class TestsLevel9(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,

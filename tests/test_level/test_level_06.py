@@ -287,7 +287,7 @@ class TestsLevel6(HedyTester):
           result = Value('b')
         print(f'{result}')""")
 
-        self.single_level_tester(code=code, expected=expected, lang='da', output='0', translate=False)
+        self.single_level_tester(code=code, expected=expected, lang='da', output='0', translate=[])
 
     @parameterized.expand(['иначе', 'sinon'])
     def test_if_assign_danish(self, else_):
@@ -305,7 +305,7 @@ class TestsLevel6(HedyTester):
           result = Value('num {else_} result is b')
         print(f'{{result}}')""")
 
-        self.single_level_tester(code=code, expected=expected, lang='da', translate=False,
+        self.single_level_tester(code=code, expected=expected, lang='da', translate=[],
                                  output=f'num {else_} result is b')
 
     def test_if_equality_print_else_print(self):
@@ -389,7 +389,7 @@ class TestsLevel6(HedyTester):
           price = Value('5')
         drink = Value('water')""")
 
-        self.single_level_tester(code=code, expected=expected, translate=False, unused_allowed=True)
+        self.single_level_tester(code=code, expected=expected, translate=[], unused_allowed=True)
 
     def test_if_with_negative_number(self):
         code = textwrap.dedent("""\
@@ -690,7 +690,7 @@ class TestsLevel6(HedyTester):
           topping = Value(topping, num_sys=__ns)
         print(f'{eten}')""")
 
-        self.single_level_tester(code=code, expected=expected, translate=False, unused_allowed=True)
+        self.single_level_tester(code=code, expected=expected, translate=[], unused_allowed=True)
 
     def test_onno_3372_else(self):
         code = textwrap.dedent("""\
@@ -927,7 +927,7 @@ class TestsLevel6(HedyTester):
             code=code,
             lang='nl',
             expected=expected,
-            translate=False
+            translate=[]
         )
 
     #
