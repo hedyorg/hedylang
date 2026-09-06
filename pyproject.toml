@@ -34,21 +34,28 @@ dependencies = [
   "doit",
 ]
 
-[project.optional-dependencies]
-dev = [
-  "hatch",
-  "pytest==9.0.2",
-  "pylint==4.0.4",
-  "parameterized==0.8.1",
-  "build==1.4.0",
-  "twine",
-  "parameterized==0.8.1",
-]
-
-
 [project.urls]
 Homepage = "https://github.com/hedyorg/hedy"
 Issues = "https://github.com/hedyorg/hedy/issues"
+
+[dependency-groups]
+dev = [
+    "hatch",
+    "ipython>=9.13.0",
+    "pytest==9.0.2",
+    "pylint==4.0.4",
+    "parameterized==0.8.1",
+    "build==1.4.0",
+    "twine",
+    "parameterized==0.8.1",
+    "pytest-env>=1.6.0",
+    "ipython-autoimport>=0.5.1",
+]
+
+[tool.pytest]
+env = [
+    "PYTHONBREAKPOINT=IPython.core.debugger.set_trace",
+]
 
 [tool.doit]
 backend = "json"
