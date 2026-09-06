@@ -1095,36 +1095,31 @@ class TestsLevel7(HedyTester):
             taart is 'appeltaart, choladetaart, kwarktaart'
             print 'we bakken een ' taart at random""")
 
-        expected = self.dedent(
-            "taart = Value([Value('\\'appeltaart'), Value('choladetaart'), Value('kwarktaart\\'')])",
-            self.list_access_transpiled('random.choice(taart.data)'),
-            "print(f'we bakken een {random.choice(taart.data)}')")
-
-        self.multi_level_tester(code=code, expected=expected, max_level=11)
+        self.multi_level_tester(
+            code=code,
+            max_level=11,
+            exception=hedy.exceptions.InvalidArgumentTypeException)
 
     def test_assign_list_values_with_inner_double_quotes(self):
         code = textwrap.dedent(f"""\
             taart is "appeltaart, choladetaart, kwarktaart"
             print 'we bakken een ' taart at random""")
 
-        expected = self.dedent(
-            "taart = Value([Value('\"appeltaart'), Value('choladetaart'), Value('kwarktaart\"')])",
-            self.list_access_transpiled('random.choice(taart.data)'),
-            "print(f'we bakken een {random.choice(taart.data)}')")
-
-        self.multi_level_tester(code=code, expected=expected, max_level=11)
+        self.multi_level_tester(
+            code=code,
+            max_level=11,
+            exception=hedy.exceptions.InvalidArgumentTypeException)
 
     def test_assign_list_with_double_quoted_values(self):
         code = textwrap.dedent(f"""\
             taart is "appeltaart, choladetaart, kwarktaart"
             print 'we bakken een' taart at random""")
 
-        expected = self.dedent(
-            "taart = Value([Value('\"appeltaart'), Value('choladetaart'), Value('kwarktaart\"')])",
-            self.list_access_transpiled('random.choice(taart.data)'),
-            "print(f'we bakken een{random.choice(taart.data)}')")
-
-        self.multi_level_tester(code=code, expected=expected, max_level=11, unused_allowed=True)
+        self.multi_level_tester(
+            code=code,
+            max_level=11,
+            unused_allowed=True,
+            exception=hedy.exceptions.InvalidArgumentTypeException)
 
     def test_assign_list_with_single_quoted_values(self):
         code = textwrap.dedent(f"""\
