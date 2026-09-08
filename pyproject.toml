@@ -1,10 +1,3 @@
-[build-system]
-requires = ["uv_build >= 0.10.7, <0.11.0"]
-build-backend = "uv_build"
-
-[tool.uv.build-backend]
-module-name = "hedy"
-
 [project]
 name = "hedylang"
 version = "0.0.0"
@@ -34,7 +27,7 @@ dependencies = [
   "doit",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "hatch",
   "pytest==9.0.2",
@@ -42,13 +35,23 @@ dev = [
   "parameterized==0.8.1",
   "build==1.4.0",
   "twine",
-  "parameterized==0.8.1",
+  "pytest-env>=1.7.0",
+  "ipython>=9.17.1",
+  "ipython-autoimport>=0.5.1",
 ]
-
 
 [project.urls]
 Homepage = "https://github.com/hedyorg/hedy"
 Issues = "https://github.com/hedyorg/hedy/issues"
+
+[tool.pytest]
+addopts = [
+    "--import-mode=importlib",  # recommended
+    "--pdbcls=IPython.terminal.debugger:TerminalPdb",
+]
+env = [
+    "PYTHONBREAKPOINT=",  # pytest handles it in tests, ensure empty
+]
 
 [tool.doit]
 backend = "json"
@@ -59,3 +62,10 @@ watch = "doit_watch:Watch"
 
 [tool.hatch.envs.hatch-test]
 default-args = ["tests"]
+
+[tool.uv.build-backend]
+module-name = "hedy"
+
+[build-system]
+requires = ["uv_build >= 0.10.7, <0.11.0"]
+build-backend = "uv_build"
