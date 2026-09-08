@@ -44,7 +44,7 @@ class TestsPublicPrograms(HedyTester):
                     level=int(snippet.level),
                     lang=snippet.language,
                     unused_allowed=True,
-                    translate=False,
+                    translate=[],
                     skip_faulty=False
                 )
 
@@ -81,7 +81,7 @@ class TestsPublicPrograms(HedyTester):
         #         code=snippet.code,
         #         level=int(snippet.level),
         #         lang=snippet.language,
-        #         translate=False,
+        #         translate=[],
         #         exception=exceptions.HedyException,
         #         skip_faulty=False
         #     )
@@ -93,7 +93,7 @@ class TestsPublicPrograms(HedyTester):
         #             code=snippet.code,
         #             level=int(snippet.level),
         #             lang=snippet.language,
-        #             translate=False,
+        #             translate=[],
         #             unused_allowed=True,
         #             exception=exceptions.HedyException,
         #             skip_faulty=False

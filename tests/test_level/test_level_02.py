@@ -1128,7 +1128,7 @@ class TestsLevel2(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected,
             max_level=5
         )
@@ -1144,7 +1144,7 @@ class TestsLevel2(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected,
             max_level=5
         )
@@ -1160,7 +1160,7 @@ class TestsLevel2(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected,
             max_level=5
         )
@@ -1171,7 +1171,7 @@ class TestsLevel2(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             exception=hedy.exceptions.UndefinedVarException,
             max_level=11
         )

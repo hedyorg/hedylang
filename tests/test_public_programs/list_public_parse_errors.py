@@ -41,7 +41,7 @@ class TestsPublicPrograms(HedyTester):
                     code=snippet.code,
                     level=int(snippet.level),
                     lang=snippet.language,
-                    translate=False,
+                    translate=[],
                     skip_faulty=False
                 )
 

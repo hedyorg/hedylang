@@ -29,6 +29,11 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(hedy.__file__)))
 HEDY_PACKAGE_DIR = os.path.dirname(os.path.abspath(hedy.__file__))
 
 
+# Round-trip targets for verify_translation: a mix of latin/non-latin and l2r/r2l.
+# TODO: this used to be ALL_KEYWORD_LANGUAGES, which no longer all round-trip; fix or drop the rest.
+VERIFY_TRANSLATION_LANGS = ['ar', 'ca', 'sq', 'bg', 'es', 'fi', 'fr', 'he', 'nl', 'hi', 'ur', 'te', 'th', 'vi', 'uk', 'tr']
+
+
 class Snippet:
     def __init__(self, filename, level, code, username=None, field_name=None, adventure_name=None, experiment_language=None, error=None, language=None, key=None, counter=0):
         self.filename = filename
@@ -228,7 +233,7 @@ class HedyTester(unittest.TestCase):
             expected_commands=None,
             unused_allowed=False,
             lang='en',
-            translate=True,
+            translate=VERIFY_TRANSLATION_LANGS,
             output=None,
             skip_faulty=True,
             microbit=False
@@ -275,7 +280,7 @@ class HedyTester(unittest.TestCase):
             expected_commands=None,
             unused_allowed=False,
             lang='en',
-            translate=True,
+            translate=VERIFY_TRANSLATION_LANGS,
             skip_faulty=True,
             microbit=False
     ):
@@ -355,7 +360,7 @@ class HedyTester(unittest.TestCase):
             ]
 
             if translate and exception not in skipped_exceptions and skipped_mappings is None:
-                self.verify_translation(code, lang, level)
+                self.verify_translation(code, lang, level, translate)
 
             # all ok? -> save hash!
             hash_of_run = create_hash(get_hedy_source_hash(), test_hash)
@@ -365,17 +370,12 @@ class HedyTester(unittest.TestCase):
                 with open(filename, "w") as fp:
                     fp.write("")
 
-    def verify_translation(self, code, lang, level):
+    def verify_translation(self, code, lang, level, to_langs=VERIFY_TRANSLATION_LANGS):
+        # TODO: rather than piggybacking onto every transpile test with a random lang,
+        # explicit per-level round-trip tests, for each command, over all langs, plus a
+        # check that every keyword token has a Translator rule.
         if lang == 'en':  # if it is English
-
-            # pick a random language to translate to
-            # all = list(ALL_KEYWORD_LANGUAGES.keys()) <- this no longer really holds
-            # all keyword languages! TODO fix or remove
-
-            # a nice mix of latin/non-latin and l2r and r2l!
-            all = ['ar', 'ca', 'sq', 'bg', 'es', 'fi', 'fr', 'he', 'nl', 'hi', 'ur', 'te', 'th', 'vi', 'uk', 'tr']
-
-            to_lang = random.choice(all)
+            to_lang = random.choice(to_langs)
 
             translated = hedy_translation.translate_keywords(
                 code, from_lang=lang, to_lang=to_lang, level=level)
