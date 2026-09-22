@@ -9,7 +9,7 @@ blue: Blau
 brown: Braun
 call: aufruf
 clear: abwischen
-color: farbe
+color: Farbe
 comma: ','
 d0: '0'
 d1: '1'
@@ -23,7 +23,7 @@ d8: '8'
 d9: '9'
 def: def
 define: definiere
-echo: echo
+echo: Echo
 elif: sofalls
 else: sonst
 'false': 'falsch'
@@ -34,10 +34,10 @@ gray: Grau
 green: Grün
 if: falls
 in: in
-input: eingabe
+input: Eingabe
 is: ist
 left: links
-length: länge
+length: Länge
 not_in: nicht in
 or: oder
 orange: Orange
@@ -48,14 +48,14 @@ print: drucke
 purple: Lila
 quote: "'"
 random: zufällig
-range: bereich
+range: Bereich
 red: Rot
 remove: entferne
 repeat: wiederhole
-return: zurück
+return: zurückgeben
 right: rechts
 sleep: schlafe
-step: schritt
+step: Schritt
 times: mal
 to: bis
 to_list: zu
@@ -65,3 +65,4 @@ while: solange
 white: Weiß
 with: mit
 yellow: Gelb
+answer: Antwort
