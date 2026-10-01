@@ -32,9 +32,23 @@ from lark import Tree, Transformer, visitors, v_args
 from os import path, getenv
 import sys
 
-from typing import Literal, NamedTuple, Generic, TypeVar
+from typing import Literal, NamedTuple, Generic, TypeVar, NewType
 
 T = TypeVar('T')
+PyExpr = NewType('PyExpr', str)
+
+
+def Repr(obj):
+    """Same as builtins.repr() except typed to help catch escaping/injection mistakes
+
+    Example:
+
+    >>> escaped_only: list[PyExpr] = []
+    >>> escaped_only.append("raise ValueError('BOOM!')")        # type error
+    >>> escaped_only.append(Repr("raise ValueError('BOOM!')"))  # safe
+    """
+    return PyExpr(repr(obj))
+
 
 log = {
     'ast': logging.getLogger('hedy.ast'),
@@ -1569,17 +1583,6 @@ def find_unquoted_segments(s):
     return result
 
 
-def whole_token_pattern(keywords):
-    """Build a regex pattern that matches any keyword as a whole token.
-
-    A token character is a Unicode letter/number or underscore.
-    """
-    unique_keywords = list(dict.fromkeys(keywords))
-    return regex.compile(
-        r'(?<![\p{L}\p{N}_])(?:' + '|'.join(regex.escape(k) for k in unique_keywords) + r')(?![\p{L}\p{N}_])'
-    )
-
-
 def get_allowed_types(command, level):
     # get only the allowed types of the command for all levels before the requested level
     allowed = [values for key, values in commands_and_types_per_level[command].items() if key <= level]
@@ -1897,32 +1900,40 @@ class ConvertToPython_1(ConvertToPython):
         return LiteralValue(int(args[0]), num_sys=get_num_sys(input_text))
 
     def print(self, meta, args):
-        argument = process_characters_needing_escape(self.unpack(args[0]))
-        argument = self.interpolate_answer(argument)
-        return f"print(f'{argument}'){self.add_debug_breakpoint()}"
+        literal = self.interpolate_answer(self.unpack(args[0]))
+        return f"print({literal}){self.add_debug_breakpoint()}"
 
     def ask(self, meta, args):
-        argument = process_characters_needing_escape(self.unpack(args[0]))
-        argument = self.interpolate_answer(argument)
-        return f"answer = input(f'{argument}'){self.add_debug_breakpoint()}"
+        literal = self.interpolate_answer(self.unpack(args[0]))
+        return f"answer = input({literal}){self.add_debug_breakpoint()}"
 
-    def interpolate_answer(self, argument) -> str:
-        # We're generating a Python f-string below; escape any user-provided braces to avoid
-        # accidental expression evaluation / syntax errors.
-        argument = argument.replace('{', '{{').replace('}', '}}')
+    def interpolate_answer(self, user_arg: str):
+        """Python exprs that concatenate to `user_arg`, `answer` keywords resolved at runtime
+
+        Hi answer!  ->  ['Hi ', globals().get('answer', 'answer'), '!']
+        """
         if not is_feature_enabled('answer_interpolation', default=True):
-            return argument
+            return Repr(user_arg)
+
         local_answer_keyword = hedy_translation.translate_keyword_from_en('answer', self.language)
-        keywords = [local_answer_keyword, 'answer']
-        pattern = whole_token_pattern(keywords)
-        return pattern.sub(lambda m: f'{{globals().get("answer", "{m.group(0)}")}}', argument)
+        answer_rgx = '(' + '|'.join(map(re.escape, {local_answer_keyword, 'answer'})) + ')'
+        keyword_pat = re.compile(r'(?<!\w)' + answer_rgx + r'(?!\w)')
+
+        def py_exprs():
+            for i, raw in enumerate(keyword_pat.split(user_arg)):  # captured, so keywords at odd indices
+                if raw:
+                    if i % 2 == 0:  # non-keyword
+                        yield Repr(raw)
+                    else:           # answer keyword
+                        yield PyExpr(f"globals().get('answer', {Repr(raw)})")
+
+        return PyExpr(' + '.join(py_exprs()))
 
     def echo(self, meta, args):  # todo: keep for backwards compatibility, maybe remove later?
         if not args:
             return f"print(answer){self.add_debug_breakpoint()}"  # no arguments, just print answer
 
-        argument = process_characters_needing_escape(self.unpack(args[0]))
-        return f"print('{argument} '+answer){self.add_debug_breakpoint()}"
+        return f"print({Repr(self.unpack(args[0]) + ' ')} + answer){self.add_debug_breakpoint()}"
 
     def play(self, meta, args):
         if not args:
@@ -3480,9 +3491,7 @@ class ConvertToPython_18(ConvertToPython_17):
 @source_map_transformer(source_map)
 class MicrobitConvertToPython_1(ConvertToPython_1):
     def print(self, meta, args):
-        # escape needed characters
-        argument = process_characters_needing_escape(self.unpack(args[0]))
-        return f"display.scroll('{argument}')"
+        return f"display.scroll({Repr(self.unpack(args[0]))})"
 
 
 @v_args(meta=True)
@@ -4220,11 +4229,11 @@ def create_lookup_table(abstract_syntax_tree, level, lang, input_string, has_pre
 
 def repr_tree(branch: lark.tree.Branch[lark.Token]):
     if not (isinstance(branch, lark.Tree) and branch.children):
-        return repr(branch)
+        return Repr(branch)
 
     repr_children = ''.join(repr_tree(t) + ',\n' for t in branch.children)
     indented_children = textwrap.indent(repr_children, '    ')
-    return f"Tree({branch.data!r}, [\n{indented_children}])"
+    return PyExpr(f"Tree({branch.data!r}, [\n{indented_children}])")
 
 
 def create_AST(input_string, level, lang="en"):
