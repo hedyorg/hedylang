@@ -1,11 +1,36 @@
 import textwrap
 import unittest
-from hedy.grammar import merge_rules_operator, parse_grammar_rule, merge_grammars, GrammarRule, RuleProcessor
+from lark import Lark
+from hedy.grammar import create_grammar, merge_rules_operator, parse_grammar_rule, merge_grammars, GrammarRule, RuleProcessor
 from parameterized import parameterized
 lang = 'en'
 
 
 class TestGrammars(unittest.TestCase):
+    def test_quoted_assignment_with_comma_is_not_list(self):
+        code = 'this_is_not_a_list is "Hey, Hello!"'
+
+        for level in range(4, 13):
+            with self.subTest(level=level):
+                grammar = create_grammar(level, lang, skip_faulty=False)
+                parser = Lark(grammar, parser='earley', lexer='dynamic', ambiguity='resolve', regex=True)
+
+                tree = parser.parse(code)
+
+                self.assertNotIn('assign_list', tree.pretty())
+
+    def test_unquoted_assignment_with_comma_is_list(self):
+        code = 'this_is_a_list is Hey, Hello!'
+
+        for level in range(4, 13):
+            with self.subTest(level=level):
+                grammar = create_grammar(level, lang, skip_faulty=False)
+                parser = Lark(grammar, parser='earley', lexer='dynamic', ambiguity='resolve', regex=True)
+
+                tree = parser.parse(code)
+
+                self.assertIn('assign_list', tree.pretty())
+
     def test_merge_grammars_adds_rule(self):
         grammar_level_1 = "start: program"
         grammar_level_2 = "command: play"
