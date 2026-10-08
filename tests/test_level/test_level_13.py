@@ -170,3 +170,19 @@ class TestsLevel13(HedyTester):
             max_level=16,
             extra_check_function=self.is_turtle(),
         )
+
+    def test_repeat_with_colon(self):
+        code = textwrap.dedent("""\
+            repeat 3 times:
+                print 'Hello!'""")
+
+        expected = textwrap.dedent("""\
+            for _ in range(3):
+              print(f'''Hello!''')""")
+
+        self.multi_level_tester(
+            code=code,
+            expected=expected,
+            max_level=16,
+            expected_commands=['repeat', 'print']
+        )
