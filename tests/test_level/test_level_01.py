@@ -184,7 +184,7 @@ class TestsLevel1(HedyTester):
             code=code,
             expected=expected,
             lang='nl',
-            translate=False  # we are trying a Dutch keyword in en, can't be translated
+            translate=[]  # we are trying a Dutch keyword in en, can't be translated
         )
 
     def test_ask_number(self):
@@ -208,7 +208,7 @@ class TestsLevel1(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected,
             max_level=2
         )
@@ -219,7 +219,7 @@ class TestsLevel1(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected
         )
 
@@ -229,7 +229,7 @@ class TestsLevel1(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             expected=expected
         )
 
@@ -278,7 +278,7 @@ class TestsLevel1(HedyTester):
             output='answer',
             expected_commands=[Command.print],
             lang='nl',
-            translate=False
+            translate=[]
         )
 
     def test_print_mixed_english_and_localized_answer_keywords_in_nl(self):
@@ -294,7 +294,7 @@ class TestsLevel1(HedyTester):
             output='answer antwoord',
             expected_commands=[Command.print],
             lang='nl',
-            translate=False
+            translate=[]
         )
 
     def test_ask_without_print_transpiles_to_single_ask_command(self):
@@ -391,7 +391,7 @@ class TestsLevel1(HedyTester):
             expected=expected,
             expected_commands=['ask', 'echo', 'ask', 'print'],
             lang='nl',
-            translate=False  # mixed codes will not translate back to their original form, sadly
+            translate=[]  # mixed codes will not translate back to their original form, sadly
         )
 
     #
@@ -668,7 +668,7 @@ class TestsLevel1(HedyTester):
         expected = "print(f'Hallo welkom bij Hedy! ')"
         output = 'Hallo welkom bij Hedy!'
 
-        self.single_level_tester(code=code, expected=expected, output=output, translate=False)
+        self.single_level_tester(code=code, expected=expected, output=output, translate=[])
 
     def test_comments_may_be_empty(self):
         code = textwrap.dedent("""\
@@ -879,7 +879,7 @@ class TestsLevel1(HedyTester):
             code=code,
             expected=expected,
             skipped_mappings=skipped_mappings,
-            translate=False,
+            translate=[],
             extra_check_function=lambda c: c.arguments['invalid_command'] in ['aks', 'prind'],
             max_level=5,
         )
@@ -953,7 +953,7 @@ class TestsHypothesisLevel1(HedyTester):
 
             self.single_level_tester(
                 code=code,
-                translate=False
+                translate=[]
             )
 
             expected_commands = [Command.ask, Command.ask, Command.echo, Command.echo, Command.forward, Command.forward,

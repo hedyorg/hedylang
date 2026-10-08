@@ -1,16 +1,16 @@
-add: shtoni
+add: shto
 and: dhe
 ask: pyet
-at: në
-black: zezë
+at: tek
+black: e zezë
 blue: blu
 brown: kafe
 call: thirr
 clear: pastro
 color: ngjyrë
-define: defino
-echo: përsërit
-elif: nendryshe
+define: përcakto
+echo: jeho
+elif: përndryshe nëse
 else: ndryshe
 for: për
 forward: përpara
@@ -27,23 +27,42 @@ not_in: jo në
 or: ose
 orange: portokalli
 pink: rozë
-pressed: shtypur
+pressed: e shtypur
 print: printo
 purple: vjollcë
 random: rastësi
-range: varg
-red: kuqe
-remove: hiqni
+range: seri
+red: e kuqe
+remove: hiq
 repeat: përsërit
 return: rikthe
-right: drejtë
-sleep: fle
+right: djathtas
+sleep: fli
 step: hap
-times: her
+times: herë
 to: deri
 to_list: deri
 turn: kthesë
-while: derisa
-white: bardhë
+while: përsa kohë që
+white: e bardhë
 with: me
-yellow: verdhë
+yellow: e verdhë
+'False': Gënjershtër
+'True': E vërtetë
+answer: përgjigje
+comma: ','
+d0: '0'
+d1: '1'
+d2: '2'
+d3: '3'
+d4: '4'
+d5: '5'
+d6: '6'
+d7: '7'
+d8: '8'
+d9: '9'
+def: përc
+'false': genjeshter
+play: luaj
+quote: "'"
+'true': sakte

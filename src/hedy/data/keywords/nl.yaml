@@ -44,3 +44,25 @@ while: zolang
 white: wit
 with: met
 yellow: geel
+'False': Niet waar
+'True': Waar
+comma: ','
+d0: '0'
+d1: '1'
+d2: '2'
+d3: '3'
+d4: '4'
+d5: '5'
+d6: '6'
+d7: '7'
+d8: '8'
+d9: '9'
+is: is
+in: in
+'false': niet waar
+echo: echo
+def: def
+'true': waar
+print: print
+quote: "'"
+return: return

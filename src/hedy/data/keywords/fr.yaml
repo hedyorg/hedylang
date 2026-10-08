@@ -8,14 +8,14 @@ black: noir
 blue: bleu
 brown: marron
 call: appelle
-clear: effacer
+clear: efface
 color: couleur
 define: définis
 echo: réponds
 elif: sinon si
 else: sinon
 'false': faux
-for: pour
+for: pour chaque
 forward: avance
 from: de
 gray: gris
@@ -30,7 +30,7 @@ not_in: pas dans
 or: ou
 orange: orange
 pink: rose
-play: joue
+play: lance
 pressed: pressé
 print: affiche
 purple: violet
@@ -38,7 +38,7 @@ random: hasard
 range: intervalle
 red: rouge
 remove: supprime
-repeat: répète|repete
+repeat: répète
 right: droite
 sleep: dors
 step: pas
@@ -64,3 +64,5 @@ d7: '7'
 d8: '8'
 d9: '9'
 return: retourne
+def: déf
+quote: "'"
