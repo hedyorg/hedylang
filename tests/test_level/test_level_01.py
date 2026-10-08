@@ -1,5 +1,4 @@
 import io
-import itertools as it
 import functools as ft
 import re
 
@@ -9,7 +8,7 @@ import hedy.translation
 from hedy import Command
 from hedy.external import get_frontend_feature_flags_context, initialize_frontend_feature_flags_from_context
 from hedy.sourcemap import SourceRange
-from ..Tester import HedyTester, SkippedMapping
+from tests.Tester import HedyTester, SkippedMapping
 
 from hypothesis import given, settings
 import hypothesis.strategies
@@ -35,7 +34,7 @@ def hedy_stdout(code: str, lvl=1, lang='en'):
     run_code = hedy.lang_utils.NORMAL_PREFIX_CODE + user_code
 
     local_vars = {'hedy_stdout': io.StringIO()}
-    exec(run_code, globals=None, locals=local_vars)
+    exec(run_code, None, local_vars)
     return local_vars['hedy_stdout'].getvalue()
 
 
