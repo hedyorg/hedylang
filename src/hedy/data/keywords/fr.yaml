@@ -11,7 +11,7 @@ call: appelle
 clear: efface
 color: couleur
 define: définis
-echo: répète
+echo: réponds
 elif: sinon si
 else: sinon
 'false': faux
