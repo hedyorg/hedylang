@@ -703,6 +703,70 @@ class TestsLevel12(HedyTester):
         )
 
     #
+    # add/remove tests
+    #
+    @parameterized.expand([("'grote muis'", "Value('grote muis')"), ('"grote muis"', 'Value("grote muis")')])
+    def test_add_quoted_text_with_spaces_to_list(self, text, value):
+        code = textwrap.dedent(f"""\
+            dieren = 'koe', 'kip'
+            add {text} to dieren
+            print dieren at random""")
+
+        expected = self.dedent(
+            "dieren = Value([Value('koe'), Value('kip')])",
+            f"dieren.data.append({value})",
+            self.list_access_transpiled("random.choice(dieren.data)"),
+            "print(f'''{random.choice(dieren.data)}''')")
+
+        self.multi_level_tester(
+            code=code,
+            expected=expected,
+            max_level=12,
+            extra_check_function=self.result_in(['koe', 'kip', 'grote muis']),
+        )
+
+    def test_remove_quoted_text_with_spaces_from_list(self):
+        code = textwrap.dedent("""\
+            dieren = 'koe', 'grote muis'
+            remove 'grote muis' from dieren
+            print dieren at random""")
+
+        expected = self.dedent(
+            "dieren = Value([Value('koe'), Value('grote muis')])",
+            self.remove_transpiled('dieren', "Value('grote muis')"),
+            self.list_access_transpiled("random.choice(dieren.data)"),
+            "print(f'''{random.choice(dieren.data)}''')")
+
+        self.multi_level_tester(
+            code=code,
+            expected=expected,
+            max_level=12,
+            extra_check_function=self.result_in(['koe']),
+        )
+
+    def test_if_quoted_text_with_spaces_in_list(self):
+        code = textwrap.dedent("""\
+            dieren = 'koe', 'grote muis'
+            if 'grote muis' in dieren
+                print 'gevonden'
+            if 'kleine muis' not in dieren
+                print 'niet gevonden'""")
+
+        expected = textwrap.dedent("""\
+            dieren = Value([Value('koe'), Value('grote muis')])
+            if Value('grote muis') in dieren.data:
+              print(f'''gevonden''')
+            if Value('kleine muis') not in dieren.data:
+              print(f'''niet gevonden''')""")
+
+        self.multi_level_tester(
+            code=code,
+            expected=expected,
+            max_level=12,
+            output='gevonden\nniet gevonden',
+        )
+
+    #
     # play tests / music tests
     #
     def test_play_var(self):

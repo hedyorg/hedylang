@@ -16,5 +16,8 @@ function_name: NAME -> text
 ?simple_expression:+= call
 ?turtle_color:+= call
 
-add: _ADD_LIST (atom | list_access | call) _TO_LIST _SPACE var_access
-remove: _REMOVE (atom | list_access | call) _FROM _SPACE var_access
+// quoted_text allows list values with spaces, e.g. add 'part 4' to parts (hedyorg/hedy#6741)
+add: _ADD_LIST (atom | quoted_text | list_access | call) _TO_LIST _SPACE var_access
+remove: _REMOVE (atom | quoted_text | list_access | call) _FROM _SPACE var_access
+in_list_check: (textwithoutspaces | quoted_text) _IN var_access
+not_in_list_check: (textwithoutspaces | quoted_text) _NOT_IN var_access
