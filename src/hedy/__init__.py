@@ -2922,6 +2922,24 @@ class ConvertToPython_11(ConvertToPython_10):
 @hedy_transpiler(level=12)
 @source_map_transformer(source_map)
 class ConvertToPython_12(ConvertToPython_11):
+    # Level 12 still accepts unquoted text, like level 11: an unquoted word is a variable if one with that name
+    # exists, and otherwise a string. Quoted text has its quotes stripped. Quotes are mandatory from level 13.
+    allows_unquoted_text = True
+
+    def is_unquoted_text(self, arg, access_line):
+        """ Returns True if arg is unquoted text that is not a variable, e.g. `hoi` in `name is hoi`,
+        and the level still treats such text as a string. """
+        if not self.allows_unquoted_text or not isinstance(arg, LiteralValue):
+            return False
+        value = arg.data
+        return (isinstance(value, str) and
+                not is_quoted(value) and
+                not self.is_list_access(value) and
+                not self.is_variable(value, access_line))
+
+    def unquoted_text_to_python_string(self, arg):
+        return f"'{process_characters_needing_escape(self.unpack(arg))}'"
+
     def text_in_quotes(self, meta, args):
         # We need to re-add the quotes, so that the Python code becomes name = 'Jan' or "Jan's"
         if args:
@@ -3057,6 +3075,19 @@ class ConvertToPython_12(ConvertToPython_11):
         return self.make_turtle_command(parameter, Command.forward,
                                         'forward', True, HedyType.float)
 
+    def color(self, meta, args):
+        # Unquoted colors, e.g. `color green`, come in as Tree('green', []) and other unquoted text as LiteralValue
+        if args and (isinstance(args[0], Tree) and self.allows_unquoted_text or
+                     self.is_unquoted_text(args[0], meta.line)):
+            value = str(self.unpack(args[0])).replace("'", "\\'")
+            return self.make_turtle_color_command(value, Command.color, 'pencolor', self.language)
+        return super().color(meta, args)
+
+    def process_variable_for_comparisons(self, arg, meta):
+        if self.is_unquoted_text(arg, meta.line):
+            return self.unquoted_text_to_python_string(arg)
+        return super().process_variable_for_comparisons(arg, meta)
+
     def assign(self, meta, args):
         left_hand_side = self.scoped_var_assign(args[0], meta.line)
         right_hand_side = args[1]
@@ -3064,6 +3095,8 @@ class ConvertToPython_12(ConvertToPython_11):
         var = escape_var(self.unpack(right_hand_side))
         if self.is_variable(right_hand_side, meta.line):
             right_hand_side = self.scoped_var_access(var, meta.line)
+        elif self.is_unquoted_text(right_hand_side, meta.line):
+            right_hand_side = self.process_literal_to_value(right_hand_side, escape=True)
         else:
             # we no longer escape quotes here because they are now needed
             right_hand_side = self.process_assign_argument(right_hand_side)
@@ -3142,7 +3175,9 @@ class ConvertToPython_12(ConvertToPython_11):
         return exception + "if " + args[0] + ":" + self.add_debug_breakpoint() + "\n" + "\n".join(all_lines)
 
     def process_add_to_remove_from_list_argument(self, arg, meta):
-        if self.is_variable_with_definition(arg, meta.line):
+        if self.is_unquoted_text(arg, meta.line):
+            return self.process_literal_to_value(arg, escape=True)
+        elif self.is_variable_with_definition(arg, meta.line):
             return self.scoped_var_access(escape_var(self.unpack(arg)), meta.line)
         elif isinstance(arg, LiteralValue):
             return self.process_literal_to_value(arg)
@@ -3160,6 +3195,12 @@ class ConvertToPython_12(ConvertToPython_11):
         return f"{value} not in {list_name}.data"
 
     def process_in_not_in_list_args(self, meta, args):
+        if self.is_unquoted_text(args[0], meta.line):
+            self.check_variable_usage_and_definition(args[1:], meta.line)
+            value = self.process_literal_to_value(args[0], escape=True)
+            list_name = self.scoped_var_access(self.unpack(args[1]), meta.line, parentheses=True)
+            return value, list_name
+
         self.check_variable_usage_and_definition(args, meta.line)
 
         value = self.unpack(args[0])
@@ -3217,6 +3258,8 @@ class ConvertToPython_12(ConvertToPython_11):
             a = escape_var(self.unpack(arg))
             var_name = self.scoped_var_access(a, access_line, parentheses=True) if use_scope else a
             return f"{var_name}{data_part}"
+        elif self.is_unquoted_text(arg, access_line):
+            return self.unquoted_text_to_python_string(arg)
         elif isinstance(arg, LiteralValue):
             if is_quoted(arg.data):
                 return f"'{process_characters_needing_escape(arg.data[1:-1])}'"
@@ -3325,6 +3368,8 @@ class ConvertToPython_12(ConvertToPython_11):
 @hedy_transpiler(level=13)
 @source_map_transformer(source_map)
 class ConvertToPython_13(ConvertToPython_12):
+    allows_unquoted_text = False
+
     def process_comparison(self, meta, args, operator):
         arg0 = self.process_variable_for_comparisons(args[0], meta)
         arg1 = self.process_variable_for_comparisons(args[1], meta)

@@ -16,5 +16,7 @@ function_name: NAME -> text
 ?simple_expression:+= call
 ?turtle_color:+= call
 
-add: _ADD_LIST (atom | list_access | call) _TO_LIST _SPACE var_access
-remove: _REMOVE (atom | list_access | call) _FROM _SPACE var_access
+// Level 12 still accepts unquoted text in add/remove, so the item is parsed as text and the transpiler decides whether
+// it is a variable or a literal. Quotes become mandatory at level 13, which redefines these rules.
+add: _ADD_LIST (NUMBER | _MINUS NUMBER | textwithoutspaces | list_access | call) _TO_LIST _SPACE var_access
+remove: _REMOVE (NUMBER | _MINUS NUMBER | textwithoutspaces | list_access | call) _FROM _SPACE var_access
