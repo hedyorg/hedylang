@@ -25,7 +25,7 @@ class TestsLevel15(HedyTester):
             code=code,
             expected=expected,
             unused_allowed=True,
-            translate=False,
+            translate=[],
             skip_faulty=False,
         )
 
@@ -41,7 +41,7 @@ class TestsLevel15(HedyTester):
             code=code,
             expected=expected,
             unused_allowed=True,
-            translate=False,
+            translate=[],
             skip_faulty=False,
         )
 
@@ -324,7 +324,7 @@ class TestsLevel15(HedyTester):
             code=code,
             expected=expected,
             unused_allowed=True,
-            translate=False
+            translate=[]
         )
 
     def test_assign_list_var_boolean(self):
@@ -361,7 +361,7 @@ class TestsLevel15(HedyTester):
             code=code,
             max_level=17,
             expected=expected,
-            translate=False
+            translate=[]
         )
 
     @parameterized.expand([
@@ -395,7 +395,7 @@ class TestsLevel15(HedyTester):
             code=code,
             max_level=17,
             expected=expected,
-            translate=False
+            translate=[]
         )
 
     @parameterized.expand(HedyTester.booleans)
@@ -414,7 +414,7 @@ class TestsLevel15(HedyTester):
             code=code,
             max_level=16,
             expected=expected,
-            translate=False
+            translate=[]
         )
 
     #
@@ -561,7 +561,7 @@ class TestsLevel15(HedyTester):
             max_level=16,
             expected=expected,
             skip_faulty=False,
-            translate=False
+            translate=[]
         )
 
     @parameterized.expand(['and', 'or'])

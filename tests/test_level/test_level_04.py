@@ -54,7 +54,7 @@ class TestsLevel4(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             expected=expected,
             max_level=11,
@@ -224,8 +224,7 @@ class TestsLevel4(HedyTester):
             code=code,
             expected=expected,
             output=output,
-            max_level=11,
-            translate=True
+            max_level=11
         )
 
     def test_print_with_backslash_at_end(self):
@@ -234,8 +233,7 @@ class TestsLevel4(HedyTester):
         self.multi_level_tester(
             code=code,
             max_level=11,
-            expected=expected,
-            translate=True
+            expected=expected
         )
 
     def test_print_with_spaces(self):
@@ -1092,6 +1090,6 @@ class TestsLevel4(HedyTester):
         self.multi_level_tester(
             max_level=11,
             code=code,
-            translate=False,
+            translate=[],
             expected=expected
         )

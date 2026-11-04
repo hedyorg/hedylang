@@ -8,21 +8,21 @@ black: noir
 blue: bleu
 brown: marron
 call: appelle
-clear: effacer
+clear: efface
 color: couleur
 define: définis
 echo: réponds
 elif: sinon si
 else: sinon
 'false': faux
-for: pour
+for: pour chaque
 forward: avance
 from: de
 gray: gris
 green: vert
 if: si
 in: dans
-input: demande
+input: entrée
 is: est
 left: gauche
 length: longueur
@@ -37,8 +37,8 @@ purple: violet
 random: hasard
 range: intervalle
 red: rouge
-remove: supprime
-repeat: répète|repete
+remove: enlève
+repeat: répète
 right: droite
 sleep: dors
 step: pas
@@ -51,3 +51,18 @@ while: tant que
 white: blanc
 with: avec
 yellow: jaune
+answer: réponse
+comma: ','
+d0: '0'
+d1: '1'
+d2: '2'
+d3: '3'
+d4: '4'
+d5: '5'
+d6: '6'
+d7: '7'
+d8: '8'
+d9: '9'
+return: retourne
+def: déf
+quote: "'"

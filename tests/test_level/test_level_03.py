@@ -90,7 +90,7 @@ class TestsLevel3(HedyTester):
             max_level=5,
             code=code,
             lang=lang,
-            translate=False,
+            translate=[],
             expected=expected
         )
 
@@ -414,7 +414,7 @@ class TestsLevel3(HedyTester):
             lang='ar',
             unused_allowed=True,
             # translation must be off because the Latin commas will be converted to arabic commas and this is correct
-            translate=False
+            translate=[]
         )
 
     def test_assign_list_with_arabic_comma_and_is(self):
@@ -1084,7 +1084,7 @@ class TestsLevel3(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
@@ -1102,7 +1102,7 @@ class TestsLevel3(HedyTester):
 
         self.multi_level_tester(
             code=code,
-            translate=False,
+            translate=[],
             skip_faulty=False,
             unused_allowed=True,
             expected=expected,
