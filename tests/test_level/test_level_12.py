@@ -875,21 +875,258 @@ class TestsLevel12(HedyTester):
             max_level=18
         )
 
-    def test_color_with_missing_quotes_literal_gives_error(self):
-        code = "color red"
+    @parameterized.expand(['red', "'red'"])
+    def test_color_with_or_without_quotes(self, color):
+        code = f"color {color}"
 
         self.multi_level_tester(
             code=code,
-            exception=hedy.exceptions.UndefinedVarException,
-            skip_faulty=False,
+            expected=self.color_transpiled('red'),
+            extra_check_function=self.is_turtle(),
+            max_level=12,
         )
 
-    def test_color_with_missing_quotes_literal_gives_error_nl(self):
+    def test_color_without_quotes_nl(self):
         code = "kleur blauw"
 
         self.multi_level_tester(
             code=code,
-            exception=hedy.exceptions.UndefinedVarException,
-            skip_faulty=False,
+            expected=self.color_transpiled('blue', lang='nl'),
+            extra_check_function=self.is_turtle(),
             lang='nl',
+            max_level=12,
+        )
+
+    #
+    # unquoted text tests
+    # Level 12 accepts unquoted text like level 11: an unquoted word is a variable if one is defined,
+    # otherwise it is a string. Quoted text has its quotes stripped. Quotes are mandatory from level 13.
+    #
+    def test_unquoted_text_program_from_issue_6575(self):
+        code = textwrap.dedent("""\
+            # print, ask, variables
+            print 'some text' "or numbers 123"
+            answer = ask 'a question?'
+            variable = text
+            variable_number = 123
+            print 'use' variable 'or' variable_number 'in a line'
+
+            # list, for
+            list = text, or, a, number, 123
+            print 'item from' list at random
+            add something to list
+            remove something from list
+            for element in list
+                print element 'is in the list'
+
+            # if, else, elif, repeat
+            if variable is text
+                if variable_number is 123
+                    print 'this'
+                elif text in list
+                    print 'that'
+                else
+                    print 'something else'
+                    print 'or more'
+            repeat 3 times
+                print 'repeat this line'
+
+            # and, or
+            if variable is text and variable_number is 123
+                print 'both are true'
+            elif variable is text or variable_number is 123
+                print 'only one is true'
+            else
+                print 'nothing is true'
+
+            #functions
+            define a_function
+                print 'the function prints this line'
+
+            call a_function
+
+            # music, turtle, sleep, clear
+            play C4
+            play 28
+            turn 360
+            forward 100
+            color green
+            sleep 1
+            clear
+
+            # maths
+            answer = 5.4+5.4
+            answer = 5.4-5.4
+            answer = 5.4*5.4
+            answer = 5.4/5.4""")
+
+        # `answer` is assigned but never read, which is not what this test is about
+        self.multi_level_tester(code=code, unused_allowed=True, max_level=12)
+
+        python = hedy.transpile(code, self.level, unused_allowed=True).code
+        for line in [
+            "variable = Value('text')",
+            "_list.data.append(Value('something'))",
+            "_list.data.remove(Value('something'))",
+            "if variable.data == 'text':",
+            "elif Value('text') in _list.data:",
+            "if variable.data == 'text' and variable_number.data == 123:",
+            "elif variable.data == 'text' or variable_number.data == 123:",
+            "__trtl = f'green'",
+        ]:
+            self.assertIn(line, python)
+
+    @parameterized.expand([('is', 'hoi'), ('=', 'hoi'), ('is', "'hoi'"), ('=', "'hoi'")])
+    def test_assign_text_with_or_without_quotes(self, assign, value):
+        code = textwrap.dedent(f"""\
+            name {assign} {value}
+            print name""")
+
+        expected = textwrap.dedent("""\
+            name = Value('hoi')
+            print(f'''{name}''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output='hoi', max_level=12)
+
+    def test_assign_unquoted_text_with_spaces_and_quote(self):
+        code = textwrap.dedent("""\
+            name = it's me
+            print name""")
+
+        expected = textwrap.dedent("""\
+            name = Value('it\\'s me')
+            print(f'''{name}''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output="it's me", max_level=12)
+
+    @parameterized.expand(['hoi', "'hoi'"])
+    def test_if_equality_with_or_without_quotes(self, value):
+        code = textwrap.dedent(f"""\
+            name = hoi
+            if name is {value}
+                print 'yes'
+            else
+                print 'no'""")
+
+        expected = textwrap.dedent("""\
+            name = Value('hoi')
+            if name.data == 'hoi':
+              print(f'''yes''')
+            else:
+              print(f'''no''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output='yes', max_level=12)
+
+    @parameterized.expand(['hoi', "'hoi'"])
+    def test_if_and_or_with_or_without_quotes(self, value):
+        code = textwrap.dedent(f"""\
+            name = hoi
+            age = 12
+            if name is {value} and age is 12
+                print 'both'
+            elif name is {value} or age is 12
+                print 'one'""")
+
+        expected = textwrap.dedent("""\
+            name = Value('hoi')
+            age = Value(12, num_sys='Latin')
+            if name.data == 'hoi' and age.data == 12:
+              print(f'''both''')
+            elif name.data == 'hoi' or age.data == 12:
+              print(f'''one''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output='both', max_level=12)
+
+    def test_if_not_equal_unquoted_text(self):
+        code = textwrap.dedent("""\
+            name = hoi
+            if name != hallo
+                print 'different'""")
+
+        expected = textwrap.dedent("""\
+            name = Value('hoi')
+            if name.data!='hallo':
+              print(f'''different''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output='different', max_level=12)
+
+    @parameterized.expand([('dog', 'fish'), ("'dog'", "'fish'")])
+    def test_if_in_not_in_list_with_or_without_quotes(self, in_value, not_in_value):
+        code = textwrap.dedent(f"""\
+            animals = dog, cat
+            if {in_value} in animals
+                print 'in'
+            if {not_in_value} not in animals
+                print 'not in'""")
+
+        expected = textwrap.dedent("""\
+            animals = Value([Value('dog'), Value('cat')])
+            if Value('dog') in animals.data:
+              print(f'''in''')
+            if Value('fish') not in animals.data:
+              print(f'''not in''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output='in\nnot in', max_level=12)
+
+    @parameterized.expand([('fish', 'dog'), ("'fish'", "'dog'")])
+    def test_add_remove_with_or_without_quotes(self, add_value, remove_value):
+        code = textwrap.dedent(f"""\
+            animals = dog, cat
+            add {add_value} to animals
+            remove {remove_value} from animals
+            for animal in animals
+                print animal""")
+
+        expected = self.dedent(
+            "animals = Value([Value('dog'), Value('cat')])",
+            "animals.data.append(Value('fish'))",
+            self.remove_transpiled('animals', "Value('dog')"),
+            """\
+            for animal in animals.data:
+              print(f'''{animal}''')
+              time.sleep(0.1)""")
+
+        self.multi_level_tester(code=code, expected=expected, output='cat\nfish', max_level=12)
+
+    def test_unquoted_defined_variable_is_used_as_variable(self):
+        code = textwrap.dedent("""\
+            animal = dog
+            other = animal
+            animals = cat, fish
+            add animal to animals
+            if animal in animals
+                print 'added'
+            remove animal from animals
+            if other is animal
+                print other""")
+
+        expected = self.dedent(
+            "animal = Value('dog')",
+            "other = animal",
+            "animals = Value([Value('cat'), Value('fish')])",
+            "animals.data.append(animal)",
+            """\
+            if animal in animals.data:
+              print(f'''added''')""",
+            self.remove_transpiled('animals', 'animal'),
+            """\
+            if other.data == animal.data:
+              print(f'''{other}''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output='added\ndog', max_level=12)
+
+    def test_color_with_unquoted_variable(self):
+        code = textwrap.dedent("""\
+            foo = white
+            color foo""")
+
+        expected = self.dedent(
+            "foo = Value('white')",
+            self.color_transpiled('{foo}'))
+
+        self.multi_level_tester(
+            code=code,
+            expected=expected,
+            extra_check_function=self.is_turtle(),
+            max_level=12,
         )

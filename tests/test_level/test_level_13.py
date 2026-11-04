@@ -1,11 +1,60 @@
 
 import textwrap
 
+from parameterized import parameterized
+
+import hedy
 from ..Tester import HedyTester
 
 
 class TestsLevel13(HedyTester):
     level = 13
+
+    #
+    # From level 13 on, text needs quotes. Level 12 still accepts unquoted text.
+    #
+    @parameterized.expand(['is', '='])
+    def test_assign_unquoted_text_gives_error(self, assign):
+        code = textwrap.dedent(f"""\
+            x {assign} hoi
+            print x""")
+
+        self.multi_level_tester(
+            code=code,
+            exception=hedy.exceptions.UnquotedAssignTextException,
+            skip_faulty=False,
+        )
+
+    def test_if_equality_unquoted_text_gives_error(self):
+        code = textwrap.dedent("""\
+            x = 'hoi'
+            if x is hoi
+                print 'yes'""")
+
+        self.multi_level_tester(
+            code=code,
+            exception=hedy.exceptions.UndefinedVarException,
+            skip_faulty=False,
+        )
+
+    def test_color_with_missing_quotes_literal_gives_error(self):
+        code = "color red"
+
+        self.multi_level_tester(
+            code=code,
+            exception=hedy.exceptions.UndefinedVarException,
+            skip_faulty=False,
+        )
+
+    def test_color_with_missing_quotes_literal_gives_error_nl(self):
+        code = "kleur blauw"
+
+        self.multi_level_tester(
+            code=code,
+            exception=hedy.exceptions.UndefinedVarException,
+            skip_faulty=False,
+            lang='nl',
+        )
 
     def test_else_with_colon(self):
         code = textwrap.dedent("""\
