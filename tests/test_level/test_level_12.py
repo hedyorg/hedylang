@@ -1088,6 +1088,27 @@ class TestsLevel12(HedyTester):
 
         self.multi_level_tester(code=code, expected=expected, output='cat\nfish', max_level=12)
 
+    # hedyorg/hedy#6741
+    @parameterized.expand([("'grey fish'", "Value('grey fish')"), ('"grey fish"', 'Value("grey fish")')])
+    def test_add_remove_quoted_text_with_spaces(self, add_value, transpiled_value):
+        code = textwrap.dedent(f"""\
+            animals = 'big dog', 'cat'
+            add {add_value} to animals
+            remove 'big dog' from animals
+            for animal in animals
+                print animal""")
+
+        expected = self.dedent(
+            "animals = Value([Value('big dog'), Value('cat')])",
+            f"animals.data.append({transpiled_value})",
+            self.remove_transpiled('animals', "Value('big dog')"),
+            """\
+            for animal in animals.data:
+              print(f'''{animal}''')
+              time.sleep(0.1)""")
+
+        self.multi_level_tester(code=code, expected=expected, output='cat\ngrey fish', max_level=12)
+
     def test_unquoted_defined_variable_is_used_as_variable(self):
         code = textwrap.dedent("""\
             animal = dog
