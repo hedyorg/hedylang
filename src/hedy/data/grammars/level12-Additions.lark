@@ -18,6 +18,7 @@ function_name: NAME -> text
 
 // Level 12 still accepts unquoted text in add/remove, so the item is parsed as text and the transpiler decides whether
 // it is a variable or a literal. Quotes become mandatory at level 13, which redefines these rules.
-// quoted_text allows values with spaces, e.g. add 'part 4' to parts (hedyorg/hedy#6741)
-add: _ADD_LIST (NUMBER | _MINUS NUMBER | textwithoutspaces | quoted_text | list_access | call) _TO_LIST _SPACE var_access
-remove: _REMOVE (NUMBER | _MINUS NUMBER | textwithoutspaces | quoted_text | list_access | call) _FROM _SPACE var_access
+// quoted_text allows quoted values with spaces (e.g. add 'part 4' to parts, hedyorg/hedy#6741), and
+// text_add_remove_list allows unquoted values with spaces (e.g. add hello hello to parts).
+add: _ADD_LIST (NUMBER | _MINUS NUMBER | quoted_text | list_access | call | text_add_remove_list) _TO_LIST _SPACE var_access
+remove: _REMOVE (NUMBER | _MINUS NUMBER | quoted_text | list_access | call | text_add_remove_list) _FROM _SPACE var_access
