@@ -7,3 +7,7 @@ __pycache__
 hedy.egg-info/
 src/.test-cache/
 .doit.db.json
+
+# Generated from src/hedy/data/keywords/*.yaml (see yaml_to_lark_utils.py)
+src/hedy/data/grammars/keywords-*.lark
+!src/hedy/data/grammars/keywords-template.lark

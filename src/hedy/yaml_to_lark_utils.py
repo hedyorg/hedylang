@@ -1,6 +1,7 @@
 import collections
 import copy
 import os
+import warnings
 from ruamel import yaml
 
 
@@ -62,4 +63,48 @@ def extract_Lark_grammar_from_yaml():
             f.write(translated_template)
 
 
-extract_Lark_grammar_from_yaml()
+
+# Files installed from a wheel get (almost) the same timestamps, but not necessarily in the right order,
+# so a grammar is only considered outdated if it is clearly older than its sources.
+_MTIME_TOLERANCE_SECONDS = 2
+
+
+def grammars_need_update():
+    """Return True if a keywords-<lang>.lark file is missing, or older than the files it is generated from.
+
+    The keyword grammars are generated from data/keywords/*.yaml and data/grammars/keywords-template.lark
+    and are not checked in, so a fresh checkout (or a change in a keyword YAML) needs a regeneration.
+    """
+    dirname = os.path.dirname(__file__)
+    input_path = os.path.join(dirname, 'data', 'keywords')
+    grammar_path = os.path.join(dirname, 'data', 'grammars')
+
+    template = os.path.join(grammar_path, 'keywords-template.lark')
+    en_yaml = os.path.join(input_path, 'en.yaml')
+    shared_sources_mtime = max(os.path.getmtime(template), os.path.getmtime(en_yaml))
+
+    for f in os.listdir(input_path):
+        if not f.endswith('.yaml'):
+            continue
+        lark_file = os.path.join(grammar_path, 'keywords-' + f[:-len('.yaml')] + '.lark')
+        if not os.path.exists(lark_file):
+            return True
+        source_mtime = max(shared_sources_mtime, os.path.getmtime(os.path.join(input_path, f)))
+        if os.path.getmtime(lark_file) < source_mtime - _MTIME_TOLERANCE_SECONDS:
+            return True
+    return False
+
+
+def ensure_grammars_up_to_date():
+    """Regenerate the keyword grammars if they are missing or outdated (see grammars_need_update)."""
+    if grammars_need_update():
+        try:
+            extract_Lark_grammar_from_yaml()
+        except OSError as e:
+            # E.g. a read-only installation: keep using the grammar files that are there.
+            warnings.warn(f'Could not regenerate the keyword grammars: {e}')
+
+
+if __name__ == '__main__':
+    # Used by `doit lark` (see dodo.py)
+    extract_Lark_grammar_from_yaml()
