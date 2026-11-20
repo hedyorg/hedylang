@@ -36,6 +36,8 @@ hallo Hedy
 
 Useful options:
 
+- `--show-preprocessed`: also print the program as the parser sees it, after preprocessing. This is printed even when the program has errors, which helps when an error points to text you didn't write (for example the `else` Hedy adds to an `if` without one)
+- `--show-ast`: also print the abstract syntax tree of the program
 - `--show-python`: also print the generated Python code
 - `--no-run`: only transpile, print the Python code and don't run it
 - `--lang nl`: the program uses keywords in another language (default: `en`)

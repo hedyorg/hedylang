@@ -64,11 +64,24 @@ def build_program(result: hedy.ParseResult, fast: bool) -> str:
     return code
 
 
+def build_ast(source: str, level: int, lang: str):
+    """Return the AST of a program, built the same way as in hedy.transpile_inner.
+
+    Only call this after the program transpiled successfully, so errors are reported by transpile().
+    """
+    processed = hedy.process_input_string(source, level, lang)
+    abstract_syntax_tree, _lookup_table, _commands = hedy.create_AST(processed, level, lang)
+    return abstract_syntax_tree
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog='hedy', description='Transpile and run a Hedy program.')
     parser.add_argument('level', type=int, help='Hedy level of the program (e.g. 1-18)')
     parser.add_argument('file', help="Hedy source file, or '-' for stdin")
     parser.add_argument('--lang', default='en', help="language of the keywords (default: 'en')")
+    parser.add_argument('--show-preprocessed', action='store_true',
+                        help='print the program as the parser sees it, after preprocessing (also when it has errors)')
+    parser.add_argument('--show-ast', action='store_true', help='print the abstract syntax tree of the program')
     parser.add_argument('--show-python', action='store_true', help='print the generated Python code')
     parser.add_argument('--no-run', action='store_true', help='only transpile, do not run')
     parser.add_argument('--fast', action='store_true', help='skip the pauses Hedy adds between commands')
@@ -80,11 +93,22 @@ def main(argv=None) -> int:
         print(f'Cannot read {args.file}: {e.strerror}', file=sys.stderr)
         return 2
 
+    if args.show_preprocessed:
+        try:
+            print(hedy.process_input_string(source, args.level, args.lang).rstrip('\n'))
+            print('-' * 40, flush=True)  # flush, so this comes before any error on stderr
+        except exceptions.HedyException:
+            pass  # preprocessing itself failed (e.g. an indentation error): transpile() below reports it
+
     try:
         result = hedy.transpile(source, args.level, lang=args.lang)
     except exceptions.HedyException as ex:
         print(format_hedy_error(ex), file=sys.stderr)
         return 1
+
+    if args.show_ast:
+        print(build_ast(source, args.level, args.lang).pretty(), end='')
+        print('-' * 40)
 
     if args.show_python or args.no_run:
         print(result.code)
