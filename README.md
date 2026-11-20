@@ -24,6 +24,8 @@ $ uv run doit pretest
 $ uv run pytest
 ```
 
+The keyword grammars (`src/hedy/data/grammars/keywords-<lang>.lark`) are generated from the keyword translations in `src/hedy/data/keywords/*.yaml` and are not checked in. They are generated automatically when `hedy` is imported and they are missing or older than the YAML files. You can also generate them explicitly with `uv run doit lark`.
+
 ## Releasing new versions
 
 A GitHub Actions Workflow will be automatically release new versions to PyPI if the file named `VERSION` in the root of the repository is changed to a different version number.

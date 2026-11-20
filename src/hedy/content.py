@@ -1,6 +1,7 @@
 import glob
 from os import path
 from hedy.yaml_file import YamlFile
+from hedy.yaml_to_lark_utils import ensure_grammars_up_to_date
 
 # We must find our data relative to this .py file. This will give the
 # correct answer both for when Hedy is run as a webserver on Heroku, as well
@@ -19,6 +20,10 @@ def total_grammars_dir():
 
 
 MAX_LEVEL = 16
+
+# The keywords-<lang>.lark files are generated from the keyword YAMLs and not checked in.
+# Generate them here (if missing or outdated), because the list of languages below depends on them.
+ensure_grammars_up_to_date()
 
 languages_in_grammar_dir = set(
     kw_file[len('keywords-'):-len('.lark')]
