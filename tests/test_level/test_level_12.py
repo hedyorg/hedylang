@@ -1068,6 +1068,25 @@ class TestsLevel12(HedyTester):
 
         self.multi_level_tester(code=code, expected=expected, output='in\nnot in', max_level=12)
 
+    # hedyorg/hedy#6741
+    @parameterized.expand([('big dog', 'grey fish'), ("'big dog'", "'grey fish'")])
+    def test_if_in_not_in_list_with_spaces_with_or_without_quotes(self, in_value, not_in_value):
+        code = textwrap.dedent(f"""\
+            animals = big dog, cat
+            if {in_value} in animals
+                print 'in'
+            if {not_in_value} not in animals
+                print 'not in'""")
+
+        expected = textwrap.dedent("""\
+            animals = Value([Value('big dog'), Value('cat')])
+            if Value('big dog') in animals.data:
+              print(f'''in''')
+            if Value('grey fish') not in animals.data:
+              print(f'''not in''')""")
+
+        self.multi_level_tester(code=code, expected=expected, output='in\nnot in', max_level=12)
+
     @parameterized.expand([('fish', 'dog'), ("'fish'", "'dog'")])
     def test_add_remove_with_or_without_quotes(self, add_value, remove_value):
         code = textwrap.dedent(f"""\
