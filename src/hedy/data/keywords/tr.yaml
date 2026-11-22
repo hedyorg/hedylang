@@ -35,7 +35,7 @@ green: yeşil
 if: eğer
 in: şunda
 input: girdi
-is: eşit
+is: eşittir|eşit
 left: sol
 length: uzunluk
 not_in: şunda değil
