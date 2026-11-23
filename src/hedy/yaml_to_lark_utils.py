@@ -3,6 +3,8 @@ import copy
 import os
 from ruamel import yaml
 
+from hedy.lang_utils import atomic_write_file
+
 
 def extract_Lark_grammar_from_yaml():
     """Creates a lark file in ../grammars/ for  all yaml files located in ./data/keywords/.
@@ -59,8 +61,9 @@ def extract_Lark_grammar_from_yaml():
 
         lark_filesname_with_path = os.path.join(current_grammar_path, 'keywords-' + yaml_lang + '.lark')
 
-        with open(lark_filesname_with_path, 'w', encoding='utf-8') as f:
-            f.write(translated_template)
+        # Write atomically: this runs on import, so another process may be reading the file at the same time
+        with atomic_write_file(lark_filesname_with_path) as f:
+            f.write(translated_template.encode('utf-8'))
 
 
 
