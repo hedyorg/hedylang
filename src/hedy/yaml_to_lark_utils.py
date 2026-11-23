@@ -1,7 +1,6 @@
 import collections
 import copy
 import os
-import warnings
 from ruamel import yaml
 
 
@@ -64,9 +63,21 @@ def extract_Lark_grammar_from_yaml():
 
 
 
-# Files installed from a wheel get (almost) the same timestamps, but not necessarily in the right order,
-# so a grammar is only considered outdated if it is clearly older than its sources.
-_MTIME_TOLERANCE_SECONDS = 2
+def _grammar_paths():
+    dirname = os.path.dirname(__file__)
+    return os.path.join(dirname, 'data', 'keywords'), os.path.join(dirname, 'data', 'grammars')
+
+
+def _lark_file_for(grammar_path, yaml_file):
+    return os.path.join(grammar_path, 'keywords-' + yaml_file[:-len('.yaml')] + '.lark')
+
+
+def missing_grammars():
+    """Return the languages that have a keyword YAML but no keywords-<lang>.lark file."""
+    input_path, grammar_path = _grammar_paths()
+    return sorted(
+        f[:-len('.yaml')] for f in os.listdir(input_path)
+        if f.endswith('.yaml') and not os.path.exists(_lark_file_for(grammar_path, f)))
 
 
 def grammars_need_update():
@@ -75,10 +86,10 @@ def grammars_need_update():
     The keyword grammars are generated from data/keywords/*.yaml and data/grammars/keywords-template.lark
     and are not checked in, so a fresh checkout (or a change in a keyword YAML) needs a regeneration.
     """
-    dirname = os.path.dirname(__file__)
-    input_path = os.path.join(dirname, 'data', 'keywords')
-    grammar_path = os.path.join(dirname, 'data', 'grammars')
+    if missing_grammars():
+        return True
 
+    input_path, grammar_path = _grammar_paths()
     template = os.path.join(grammar_path, 'keywords-template.lark')
     en_yaml = os.path.join(input_path, 'en.yaml')
     shared_sources_mtime = max(os.path.getmtime(template), os.path.getmtime(en_yaml))
@@ -86,23 +97,33 @@ def grammars_need_update():
     for f in os.listdir(input_path):
         if not f.endswith('.yaml'):
             continue
-        lark_file = os.path.join(grammar_path, 'keywords-' + f[:-len('.yaml')] + '.lark')
-        if not os.path.exists(lark_file):
-            return True
         source_mtime = max(shared_sources_mtime, os.path.getmtime(os.path.join(input_path, f)))
-        if os.path.getmtime(lark_file) < source_mtime - _MTIME_TOLERANCE_SECONDS:
+        if os.path.getmtime(_lark_file_for(grammar_path, f)) < source_mtime:
             return True
     return False
 
 
+def is_source_checkout():
+    """Return True if Hedy runs from a checkout of the repository (src/hedy next to dodo.py)."""
+    return os.path.exists(os.path.join(os.path.dirname(__file__), '..', '..', 'dodo.py'))
+
+
 def ensure_grammars_up_to_date():
-    """Regenerate the keyword grammars if they are missing or outdated (see grammars_need_update)."""
-    if grammars_need_update():
-        try:
+    """Make sure the keyword grammars exist, and in a source checkout, that they are up to date.
+
+    In a source checkout the grammars are not checked in, so they are generated when missing or older
+    than their sources; any failure to do so is an error. An installed package ships the generated
+    grammars and is never regenerated (its file timestamps say nothing about which file is newer),
+    but a missing grammar is still an error: that language would otherwise silently fall back to English.
+    """
+    if is_source_checkout():
+        if grammars_need_update():
             extract_Lark_grammar_from_yaml()
-        except OSError as e:
-            # E.g. a read-only installation: keep using the grammar files that are there.
-            warnings.warn(f'Could not regenerate the keyword grammars: {e}')
+        return
+
+    missing = missing_grammars()
+    if missing:
+        raise RuntimeError(f'The keyword grammars for {", ".join(missing)} are missing from the installed package.')
 
 
 if __name__ == '__main__':
