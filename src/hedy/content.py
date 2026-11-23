@@ -56,7 +56,7 @@ CUSTOM_LANGUAGE_TRANSLATIONS = {'kmr': 'Kurdî (Tirkiye)',
 ALL_KEYWORDS = {
     str(lang): {
         str(k): str(v).split('|')
-        for k, v in YamlFile.for_file(f'{data_root}/keywords/{lang}.yaml').to_dict().items()
+        for k, v in YamlFile.for_file(path.join(data_root, 'keywords', f'{lang}.yaml')).to_dict().items()
     }
     for lang in ALL_KEYWORD_LANGUAGES
 }
