@@ -12,9 +12,6 @@ if_pressed_else: _IF (LETTER_OR_NUMERAL | NAME) _IS _PRESSED _EOL (_SPACE comman
 if_pressed_without_else: if_pressed
 if_pressed_elses: _EOL (_SPACE)* _ELSE (_SPACE)* _EOL (_SPACE command) (_EOL _SPACE command)* _EOL? _END_BLOCK
 
-ifelifelse: if_clause (_EOL elif_clause)* (_EOL else_clause)?
-
-
 repeat.1: _REPEAT (INT | var_access) _TIMES _SPACE? _EOL _commands _EOL? _END_BLOCK
 error_repeat_dep_8:<old_rule_to_error repeat>
 
