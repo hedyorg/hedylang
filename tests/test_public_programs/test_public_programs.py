@@ -1,4 +1,3 @@
-import json
 import hedy
 from ..Tester import HedyTester, Snippet
 from parameterized import parameterized

@@ -1,8 +1,6 @@
-import os
 from os import path
 from glob import glob
 import sys
-import platform
 
 def task_lark():
     """Generate Lark grammar files based on keyword information in keyword YAMLs."""
