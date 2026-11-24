@@ -2,7 +2,7 @@ command:+= assign_list | add | remove | error_add_missing_to | error_remove_miss
 _print_ask_argument: (_SPACE | (list_access textwithoutspaces?) | textwithoutspaces)*
 
 assign: var _IS (list_access | textwithinnerspaces) _SPACE? -> assign
-assign_list: var _IS textwithinnerspaces (_COMMA textwithinnerspaces)+ _SPACE?
+assign_list.-1: var _IS textwithinnerspaces (_COMMA textwithinnerspaces)+ _SPACE?
 play: _PLAY (list_access | textwithoutspaces)
 
 list_access: var_access _AT (INT | random)
