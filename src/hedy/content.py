@@ -1,7 +1,6 @@
 import glob
 from os import path
 from hedy.yaml_file import YamlFile
-from hedy.yaml_to_lark_utils import ensure_grammars_up_to_date
 
 # We must find our data relative to this .py file. This will give the
 # correct answer both for when Hedy is run as a webserver on Heroku, as well
@@ -21,16 +20,21 @@ def total_grammars_dir():
 
 MAX_LEVEL = 16
 
-# The keywords-<lang>.lark files are generated from the keyword YAMLs and not checked in.
-# Generate them here (if missing or outdated), because the list of languages below depends on them.
-ensure_grammars_up_to_date()
-
 languages_in_grammar_dir = set(
     kw_file[len('keywords-'):-len('.lark')]
     for kw_file in glob.glob('keywords-*.lark', root_dir=grammars_dir()))
 languages_in_keywords_dir = set(
     kw_file[:-len('.yaml')]
     for kw_file in glob.glob('*.yaml', root_dir=path.join(data_root, 'keywords')))
+
+# The keyword grammars are generated before packaging and are not checked in. Without this check,
+# a language without a grammar would silently fall back to the English keywords.
+_missing_grammars = sorted(languages_in_keywords_dir - languages_in_grammar_dir)
+if _missing_grammars:
+    raise RuntimeError(
+        f'The Hedy keyword grammars are missing for: {", ".join(_missing_grammars)}. '
+        'In a source checkout, generate them with `uv run doit lark`. '
+        'In an installed package, the package was not built correctly.')
 
 # Define dictionary for available languages. Fill dynamically later.
 ALL_KEYWORD_LANGUAGES = {}

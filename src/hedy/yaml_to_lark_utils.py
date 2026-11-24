@@ -3,8 +3,6 @@ import copy
 import os
 from ruamel import yaml
 
-from hedy.lang_utils import atomic_write_file
-
 
 def extract_Lark_grammar_from_yaml():
     """Creates a lark file in ../grammars/ for  all yaml files located in ./data/keywords/.
@@ -61,75 +59,10 @@ def extract_Lark_grammar_from_yaml():
 
         lark_filesname_with_path = os.path.join(current_grammar_path, 'keywords-' + yaml_lang + '.lark')
 
-        # Write atomically: this runs on import, so another process may be reading the file at the same time
-        with atomic_write_file(lark_filesname_with_path) as f:
-            f.write(translated_template.encode('utf-8'))
-
-
-
-def _grammar_paths():
-    dirname = os.path.dirname(__file__)
-    return os.path.join(dirname, 'data', 'keywords'), os.path.join(dirname, 'data', 'grammars')
-
-
-def _lark_file_for(grammar_path, yaml_file):
-    return os.path.join(grammar_path, 'keywords-' + yaml_file[:-len('.yaml')] + '.lark')
-
-
-def missing_grammars():
-    """Return the languages that have a keyword YAML but no keywords-<lang>.lark file."""
-    input_path, grammar_path = _grammar_paths()
-    return sorted(
-        f[:-len('.yaml')] for f in os.listdir(input_path)
-        if f.endswith('.yaml') and not os.path.exists(_lark_file_for(grammar_path, f)))
-
-
-def grammars_need_update():
-    """Return True if a keywords-<lang>.lark file is missing, or older than the files it is generated from.
-
-    The keyword grammars are generated from data/keywords/*.yaml and data/grammars/keywords-template.lark
-    and are not checked in, so a fresh checkout (or a change in a keyword YAML) needs a regeneration.
-    """
-    if missing_grammars():
-        return True
-
-    input_path, grammar_path = _grammar_paths()
-    template = os.path.join(grammar_path, 'keywords-template.lark')
-    en_yaml = os.path.join(input_path, 'en.yaml')
-    shared_sources_mtime = max(os.path.getmtime(template), os.path.getmtime(en_yaml))
-
-    for f in os.listdir(input_path):
-        if not f.endswith('.yaml'):
-            continue
-        source_mtime = max(shared_sources_mtime, os.path.getmtime(os.path.join(input_path, f)))
-        if os.path.getmtime(_lark_file_for(grammar_path, f)) < source_mtime:
-            return True
-    return False
-
-
-def is_source_checkout():
-    """Return True if Hedy runs from a checkout of the repository (src/hedy next to dodo.py)."""
-    return os.path.exists(os.path.join(os.path.dirname(__file__), '..', '..', 'dodo.py'))
-
-
-def ensure_grammars_up_to_date():
-    """Make sure the keyword grammars exist, and in a source checkout, that they are up to date.
-
-    In a source checkout the grammars are not checked in, so they are generated when missing or older
-    than their sources; any failure to do so is an error. An installed package ships the generated
-    grammars and is never regenerated (its file timestamps say nothing about which file is newer),
-    but a missing grammar is still an error: that language would otherwise silently fall back to English.
-    """
-    if is_source_checkout():
-        if grammars_need_update():
-            extract_Lark_grammar_from_yaml()
-        return
-
-    missing = missing_grammars()
-    if missing:
-        raise RuntimeError(f'The keyword grammars for {", ".join(missing)} are missing from the installed package.')
+        with open(lark_filesname_with_path, 'w', encoding='utf-8') as f:
+            f.write(translated_template)
 
 
 if __name__ == '__main__':
-    # Used by `doit lark` (see dodo.py)
+    # Used by `doit lark` (see dodo.py). Don't import hedy in this file: that fails until the grammars are generated.
     extract_Lark_grammar_from_yaml()

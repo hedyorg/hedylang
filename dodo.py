@@ -1,6 +1,7 @@
 import os
 from os import path
 from glob import glob
+import subprocess
 import sys
 import platform
 
@@ -38,10 +39,12 @@ def task_build():
     """Build the project."""
     return dict(
         title=lambda _: 'Build the project',
-        task_dep=['lark', 'test'],
+        task_dep=['lark'],
         actions=[
-            ['uv', 'build'],
+            # Clear dist/, so it only contains the files that are going to be tested and published
+            ['uv', 'build', '--clear'],
         ],
+        verbosity=Verbosity.LIVE,
     )
 
 
@@ -57,15 +60,21 @@ def task_test():
     )
 
 
-def task_publish():
-    """Publish the project.
+def task_test_wheel():
+    """Build the wheel, install it in a clean environment and run the tests against it."""
+    return dict(
+        title=lambda _: 'Run the tests against the built wheel',
+        task_dep=['build'],
+        actions=[test_wheel],
+        verbosity=Verbosity.LIVE,
+    )
 
-    We *must* run the tests before publishing, because running the tests will
-    generate the *-Total grammar files.
-    """
+
+def task_publish():
+    """Publish the wheel that was built and tested by test_wheel."""
     return dict(
         title=lambda _: 'Publish the project',
-        task_dep=['build', 'test'],
+        task_dep=['test_wheel'],
         actions=[
             ['uv', 'publish'],
         ],
@@ -74,6 +83,46 @@ def task_publish():
 
 class Verbosity:
     LIVE = 2
+
+
+WHEEL_VENV = '.venv-wheel'
+
+# What a consumer of the package does. The Dutch keyword fails if the keyword grammars are not in the wheel.
+SMOKE_TEST = '''
+import sys
+import hedy
+
+assert hedy.__file__.startswith(sys.prefix), f'Not testing the installed wheel but {hedy.__file__}'
+assert hedy.transpile('print hello', 1).code == "print(f'hello')"
+assert 'input(' in hedy.transpile('vraag hoe heet je', 1, lang='nl').code
+print(f'Smoke test passed, using {hedy.__file__}')
+'''
+
+
+def test_wheel():
+    """Install the wheel in dist/ like a consumer would, and run the tests against it.
+
+    The tests run from the root of the repository. They import the installed package and not src/hedy,
+    because the project itself is not installed in this environment (the smoke test checks this).
+    """
+    def run(*args, **kwargs):
+        return subprocess.run(args, check=True, **kwargs)
+
+    [wheel] = glob('dist/*.whl')
+    python = path.join(WHEEL_VENV, *(['Scripts', 'python.exe'] if sys.platform == 'win32' else ['bin', 'python']))
+
+    run('uv', 'venv', '--clear', '--python', python3, WHEEL_VENV)
+
+    # First only the wheel and its own dependencies: this must be enough for a consumer
+    run('uv', 'pip', 'install', '--python', python, wheel)
+    run(python, '-c', SMOKE_TEST)
+
+    # Then add the (locked) development dependencies to be able to run the tests
+    requirements = run('uv', 'export', '--locked', '--quiet', '--all-extras', '--no-emit-project', stdout=subprocess.PIPE)
+    run('uv', 'pip', 'install', '--python', python, '--requirements', '-', input=requirements.stdout)
+    run(python, '-c', SMOKE_TEST)
+    run(python, '-m', 'pytest')
+
 
 # The current Python interpreter, use to run other Python scripts as well
 python3 = sys.executable
