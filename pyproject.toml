@@ -40,6 +40,9 @@ dev = [
   "ipython-autoimport>=0.5.1",
 ]
 
+[project.scripts]
+hedy = "hedy.__main__:main"
+
 [project.urls]
 Homepage = "https://github.com/hedyorg/hedy"
 Issues = "https://github.com/hedyorg/hedy/issues"
