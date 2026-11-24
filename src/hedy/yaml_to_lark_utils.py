@@ -36,7 +36,8 @@ def extract_Lark_grammar_from_yaml():
         # Create an empty dictionary -> fill with english keywords and then overwrite all translated keywords
         translations = collections.defaultdict(lambda: 'Unknown Exception')
         translations.update(en_command_combinations)
-        translations.update(command_combinations)
+        # An empty translation (e.g. from Weblate) counts as untranslated, so the English keyword is used
+        translations.update({k: v for k, v in (command_combinations or {}).items() if v})
 
         translation_copy = copy.deepcopy(translations)
         for k, v in translation_copy.items():
@@ -62,4 +63,6 @@ def extract_Lark_grammar_from_yaml():
             f.write(translated_template)
 
 
-extract_Lark_grammar_from_yaml()
+if __name__ == '__main__':
+    # Used by `doit lark` (see dodo.py). Don't import hedy in this file: that fails until the grammars are generated.
+    extract_Lark_grammar_from_yaml()

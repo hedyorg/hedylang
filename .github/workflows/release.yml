@@ -68,17 +68,15 @@ jobs:
     - name: Install the project
       run: uv sync --locked --all-extras --dev
 
-    - name: Run tests
-      run: |
-        # This updates files that are necessary for publishing
-        uv run doit pretest
-        uv run pytest
+    - name: Set the version
+      run: uv version ${{ needs.version.outputs.version }}
 
-    - name: Build and publish
-      run: |
-        uv version ${{ needs.version.outputs.version }}
-        uv build
-        uv publish
+    - name: Build the package and run the tests against it
+      run: uv run doit test_wheel
+
+    # Publish the files that were just tested, don't build again
+    - name: Publish
+      run: uv publish
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
