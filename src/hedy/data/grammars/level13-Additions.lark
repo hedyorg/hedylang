@@ -31,7 +31,7 @@ assign: var (_IS | _EQUALS) (INT | atom | list_access | expression | quoted_text
 assign_list: var (_IS | _EQUALS) _LEFT_SQUARE_BRACKET ((INT | atom | list_access | expression | quoted_text | error_list_access_at) (_COMMA (INT | atom | list_access | expression | quoted_text  | error_list_access_at))*)? _RIGHT_SQUARE_BRACKET
 
 // adding the new commands
-command: += change_list_item | while_loop | for_loop | input | input_empty_brackets | define | call | return | error_for_missing_in | error_for_missing_to | error_for_missing_command | error_assign_list_missing_brackets
+command: += change_list_item | while_loop | for_loop | input | input_empty_brackets | define | error_for_missing_in | error_for_missing_to | error_for_missing_command | error_assign_list_missing_brackets
 
 //new : for loop
 for_loop: _FOR var _IN _RANGE _LEFT_BRACKET? (INT | var_access) _COMMA (INT | var_access) _RIGHT_BRACKET? _COLON? _EOL (_SPACE command) (_EOL _SPACE command)*  _EOL? _END_BLOCK

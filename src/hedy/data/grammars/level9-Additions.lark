@@ -1,4 +1,4 @@
-command: += error_repeat_dep_8 | if_pressed_without_else | if_pressed if_pressed_elses? -= error_invalid_space | error_else_no_if
+command: += error_repeat_dep_8 | if_pressed if_pressed_elses? -= error_invalid_space | error_else_no_if
 
 _commands: (_SPACE command) (_EOL (_SPACE command))*
 
