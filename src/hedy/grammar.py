@@ -236,7 +236,8 @@ def expand_keyword(**kwargs):
     lang = kwargs['lang']
 
     values = get_translated_keyword(keyword, lang)
-    values = sorted(list(set(values)))
+    # The result is used inside /.../ regexes, so a slash in a keyword (e.g. Bulgarian `не в/във`) has to be escaped
+    values = sorted(list(set(v.replace('/', '\\/') for v in values)))
     return '|'.join(values)
 
 

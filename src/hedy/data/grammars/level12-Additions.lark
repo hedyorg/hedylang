@@ -22,3 +22,8 @@ function_name: NAME -> text
 // text_add_remove_list allows unquoted values with spaces (e.g. add hello hello to parts).
 add: _ADD_LIST (NUMBER | _MINUS NUMBER | quoted_text | list_access | call | text_add_remove_list) _TO_LIST _SPACE var_access
 remove: _REMOVE (NUMBER | _MINUS NUMBER | quoted_text | list_access | call | text_add_remove_list) _FROM _SPACE var_access
+
+// The same goes for in/not in, e.g. if 'part 1' in parts and if part 1 not in parts (hedyorg/hedy#6741).
+text_in_list_check: /(?:[^\n,،，、# ]| (?!<expand_keyword in>|<expand_keyword not_in>))+/ -> text
+in_list_check: (quoted_text | text_in_list_check) _IN var_access
+not_in_list_check: (quoted_text | text_in_list_check) _NOT_IN var_access
